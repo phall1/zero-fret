@@ -50,6 +50,29 @@ It is not a substitute for any of the device tests above — the input is
 generated, so it says nothing about the microphone, the audio session, or the
 detector's behaviour on a real string.
 
+## Noise rejection
+
+`Scripts/` has no benchmark for this, but the scenario harness used to tune the
+gates lives in the commit history for `fix(audio): separate the instrument from
+the room`. It replays a plucked string, sympathetic ringing of the other five,
+pick attack, room noise and synthesised speech through a modelled phone
+microphone, and reports voiced-frame rate, string-assignment correctness and
+switch count.
+
+Thresholds in `PitchStability` were swept against that set rather than chosen by
+feel; the sweep table is in the source. They are calibrated to a *model* of a
+room, so they are a starting point for on-device judgement, not a substitute for
+it.
+
+Worth re-checking on device:
+
+| | |
+|---|---|
+| Low E held with a TV or conversation in the room | ☐ |
+| First reading after a pluck does not feel sluggish (128 ms settle) | ☐ |
+| Nothing displayed when the instrument is silent but the room is not | ☐ |
+| A bend still tracks smoothly rather than dropping the lock | ☐ |
+
 ## What the host suite deliberately does not prove
 
 - **Microphone frequency response.** Everything upstream of `AVAudioEngine` is
