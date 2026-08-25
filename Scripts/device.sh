@@ -14,6 +14,13 @@
 set -euo pipefail
 cd "$(dirname "$0")/.."
 
+# Load local App Store Connect credentials if present. .env.asc is gitignored;
+# see docs/SHIPPING.md for what goes in it.
+if [[ -f .env.asc ]]; then
+  # shellcheck disable=SC1091
+  source .env.asc
+fi
+
 BUNDLE_ID=dev.phux.zerofret
 DERIVED=build/DerivedData
 APP="$DERIVED/Build/Products/Debug-iphoneos/ZeroFret.app"

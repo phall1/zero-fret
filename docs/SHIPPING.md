@@ -6,41 +6,46 @@ credentials — nothing in this repo carries them, by design.
 
 ---
 
-## The one thing that is currently blocking
+## Signing
 
-`xcodebuild` reports:
+Signing runs off an **App Store Connect API key**, not an Apple ID signed into
+Xcode. That is deliberate: it works headlessly, over SSH, and in CI, and it does
+not expire the way an Xcode session does.
 
+The credentials live in `.env.asc` at the repo root, which is **gitignored**:
+
+```sh
+export ASC_KEY_ID=XXXXXXXXXX
+export ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+export ASC_KEY_PATH="$HOME/.appstoreconnect/private_keys/AuthKey_XXXXXXXXXX.p8"
 ```
-error: No Accounts: Add a new account in Accounts settings.
-error: No profiles for 'dev.phux.zerofret' were found
-```
 
-Xcode has the certificates in the keychain (`Apple Development` and
-`Apple Distribution`) but no Apple ID signed in, so it cannot register the new
-App ID or mint a provisioning profile. Pick **one** of the two fixes below.
+`Scripts/device.sh` and `Scripts/archive.sh` source that file automatically, so
+there is nothing to export by hand.
 
-### Option A — sign into Xcode (30 seconds, GUI)
+The private key itself lives outside the repo entirely, at
+`~/.appstoreconnect/private_keys/`, mode `600`. Apple lets you download a `.p8`
+exactly once — if it is ever lost, revoke the key and generate a new one.
 
-Xcode → Settings → Accounts → **+** → Apple ID → sign in.
-
-Then everything below works, because `-allowProvisioningUpdates` can create the
-App ID and the profile on demand.
-
-### Option B — App Store Connect API key (headless, works over SSH)
+### Setting this up on another machine
 
 1. App Store Connect → **Users and Access** → **Integrations** → **Keys**
-2. **+**, name it something like `zero-fret-ci`, access **App Manager**
-3. Download the `.p8` — Apple lets you download it exactly once
+2. **+**, name it, access **App Manager**
+3. Download the `.p8` (one download only)
 4. ```sh
    mkdir -p ~/.appstoreconnect/private_keys
-   mv ~/Downloads/AuthKey_XXXXXXXXXX.p8 ~/.appstoreconnect/private_keys/
-   export ASC_KEY_ID=XXXXXXXXXX
-   export ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
-   export ASC_KEY_PATH=~/.appstoreconnect/private_keys/AuthKey_XXXXXXXXXX.p8
+   mv ~/Downloads/AuthKey_*.p8 ~/.appstoreconnect/private_keys/
+   chmod 600 ~/.appstoreconnect/private_keys/AuthKey_*.p8
+   cp .env.asc.example .env.asc   # then fill in the two IDs
    ```
 
-Option B is strictly better if you ever want this in CI. Option A is faster right
-now.
+The Issuer ID is shown at the top of that same Keys page.
+
+### The Xcode-account alternative
+
+If you would rather use a signed-in Apple ID, Xcode → Settings → Accounts → **+**.
+The scripts fall back to it automatically when no API key is set. It is fine
+locally and useless in CI.
 
 ---
 

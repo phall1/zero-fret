@@ -19,6 +19,8 @@ AuthKey_*.p8
 ExportOptions.local.plist
 .env
 .env.*
+# ...but the placeholder template is safe and should be tracked.
+!.env.asc.example
 secrets/
 
 # macOS
