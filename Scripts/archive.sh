@@ -27,6 +27,14 @@
 
 set -euo pipefail
 
+# Apple's tools first on PATH. Xcode's IPA packaging step shells out to `rsync`,
+# and a Homebrew rsync (3.x) shadowing Apple's openrsync makes it fail with a
+# bare "Copy failed" — the real error, `rsync error: syntax or usage error`, is
+# buried in the .xcdistributionlogs bundle. Same class of problem for any other
+# GNU coreutils shim that lands ahead of /usr/bin.
+PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
+export PATH
+
 cd "$(dirname "$0")/.."
 
 # Load local App Store Connect credentials if present. .env.asc is gitignored;
@@ -38,6 +46,7 @@ fi
 
 SCHEME=ZeroFret
 PROJECT=ZeroFret.xcodeproj
+BUNDLE_ID=dev.phux.zerofret
 BUILD_DIR=build
 ARCHIVE="$BUILD_DIR/$SCHEME.xcarchive"
 EXPORT_DIR="$BUILD_DIR/export"
@@ -137,6 +146,29 @@ MSG
   exit $STATUS
 fi
 
+# Cloud signing (signingStyle=automatic) asks Apple to mint a distribution
+# certificate on demand, and that requires an API key with the Admin role. An
+# App Manager key gets "Cloud signing permission error". When a distribution
+# certificate already exists locally there is no reason to ask for a new one:
+# name the profile and sign manually instead.
+SIGNING_STYLE=automatic
+MANUAL_BLOCK=""
+if [[ -n "${EXPORT_PROFILE:-}" ]]; then
+  SIGNING_STYLE=manual
+  MANUAL_BLOCK=$(cat <<PL
+
+	<key>signingCertificate</key>
+	<string>${EXPORT_CERT:-Apple Distribution}</string>
+	<key>provisioningProfiles</key>
+	<dict>
+		<key>${BUNDLE_ID}</key>
+		<string>${EXPORT_PROFILE}</string>
+	</dict>
+PL
+)
+  echo "==> manual signing with profile \"$EXPORT_PROFILE\""
+fi
+
 # Written at run time so the team ID never lands in a tracked file.
 PLIST="$BUILD_DIR/ExportOptions.plist"
 cat > "$PLIST" <<PL
@@ -151,7 +183,7 @@ cat > "$PLIST" <<PL
 	<key>destination</key>
 	<string>export</string>
 	<key>signingStyle</key>
-	<string>automatic</string>
+	<string>${SIGNING_STYLE}</string>${MANUAL_BLOCK}
 	<key>uploadSymbols</key>
 	<true/>
 	<key>manageAppVersionAndBuildNumber</key>
