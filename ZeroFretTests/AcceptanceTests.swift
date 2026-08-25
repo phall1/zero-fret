@@ -12,7 +12,8 @@ final class AcceptanceTests: XCTestCase {
                            smoothing: ResponseMode? = .fast) -> (hz: Double, clarity: Double)? {
         let settled = Harness.settled(Harness.run(signal: signal, sampleRate: fs,
                                                   windowSize: windowSize,
-                                                  smoothing: smoothing))
+                                                  smoothing: smoothing,
+                                                  gated: true))
         guard !settled.isEmpty else { return nil }
         let hz = settled.map(\.frequency).sorted()[settled.count / 2]
         let clarity = settled.map(\.clarity).sorted()[settled.count / 2]
@@ -110,7 +111,7 @@ final class AcceptanceTests: XCTestCase {
 
         let signal = pluck(fundamental: b0, amplitudes: [1.0, 0.8, 0.6, 0.45, 0.3],
                            seed: 0xB0, seconds: 2.0, decay: 3.0)
-        let results = Harness.run(signal: signal, sampleRate: fs, windowSize: window)
+        let results = Harness.run(signal: signal, sampleRate: fs, windowSize: window, gated: true)
 
         // "Locks within 1 s": at hop 2048 that is the first 23 frames.
         let hop = Double(window / 4) / fs
@@ -182,7 +183,7 @@ final class AcceptanceTests: XCTestCase {
     func testAcceptance10_SilenceProducesNothing() {
         var signal = Harness.sine(196.0, sampleRate: fs, seconds: 0.5)
         signal += [Float](repeating: 0, count: Int(fs * 2.0))
-        let results = Harness.run(signal: signal, sampleRate: fs, windowSize: 4096)
+        let results = Harness.run(signal: signal, sampleRate: fs, windowSize: 4096, gated: true)
 
         let hop = 1024.0 / fs
         let tail = results.suffix(Int(1.0 / hop))

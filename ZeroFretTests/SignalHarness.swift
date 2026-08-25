@@ -5,14 +5,20 @@ import Foundation
 /// persistent state, then a sliding window into the detector. Tests must run the
 /// same chain the app does or they prove nothing about the app.
 enum Harness {
+    /// - Parameter gated: run the noise gate and the pitch-stability gate too,
+    ///   as `DetectionWorker` does. Off by default so detector-level tests can
+    ///   look at raw output; the acceptance tests turn it on.
     static func run(signal: [Float],
                     sampleRate: Double,
                     windowSize: Int,
-                    smoothing: ResponseMode? = nil) -> [PitchResult] {
+                    smoothing: ResponseMode? = nil,
+                    gated: Bool = false) -> [PitchResult] {
         let hop = windowSize / 4
         let detector = PitchDetector(sampleRate: sampleRate, windowSize: windowSize)
         let filter = Biquad(sampleRate: sampleRate)
         let smoother = smoothing.map { Smoother(mode: $0) }
+        let noiseGate = NoiseGate()
+        var stability = PitchStability()
 
         var history = [Float](repeating: 0, count: windowSize)
         var filled = 0
@@ -32,6 +38,13 @@ enum Harness {
             guard filled >= windowSize else { continue }
 
             var result = history.withUnsafeBufferPointer { detector.process($0.baseAddress!) }
+            if gated {
+                let above = noiseGate.update(rms: result.rms,
+                                             dt: Double(hop) / sampleRate,
+                                             pitchDetected: result.hasPitch)
+                result.hasPitch = stability.admit(frequency: result.frequency,
+                                                  voiced: result.hasPitch && above)
+            }
             if let smoother, result.hasPitch {
                 result.frequency = smoother.process(hz: result.frequency,
                                                     dt: Double(hop) / sampleRate)

@@ -43,6 +43,10 @@ final class StringAssigner {
     static let switchFrames = 3
     /// §4: beyond this the candidate is between two strings — reject it.
     static let maxAcceptableCents = 60.0
+    /// Consecutive out-of-range frames before the incumbent is released. ~0.5 s
+    /// at hop 1024, long enough to ride out interference and short enough that
+    /// genuinely moving to another instrument re-acquires promptly.
+    static let releaseFrames = 24
 
     /// Set when the user taps a string row. Assignment is disabled while non-nil.
     var pinnedIndex: Int?
@@ -50,11 +54,13 @@ final class StringAssigner {
     private(set) var currentIndex: Int?
     private var pendingIndex: Int?
     private var pendingFrames = 0
+    private var outOfRangeFrames = 0
 
     func reset() {
         currentIndex = nil
         pendingIndex = nil
         pendingFrames = 0
+        outOfRangeFrames = 0
     }
 
     /// - Parameters:
@@ -84,11 +90,21 @@ final class StringAssigner {
         }
 
         guard bestAbsCents <= StringAssigner.maxAcceptableCents else {
-            currentIndex = nil
-            pendingIndex = nil
-            pendingFrames = 0
+            // Report chromatically, but do NOT discard the incumbent on the
+            // strength of one frame. Clearing it here meant the next plausible
+            // frame hit the "no incumbent" path and adopted a string outright,
+            // with no hysteresis at all — so any interference that briefly
+            // landed between strings reset the whole mechanism, and the readout
+            // hopped around. Only let go after sustained loss.
+            outOfRangeFrames += 1
+            if outOfRangeFrames >= StringAssigner.releaseFrames {
+                currentIndex = nil
+                pendingIndex = nil
+                pendingFrames = 0
+            }
             return chromaticTarget(frequency: frequency, referenceA: referenceA)
         }
+        outOfRangeFrames = 0
 
         guard let incumbent = currentIndex, tuning.midiNotes.indices.contains(incumbent) else {
             currentIndex = bestIndex

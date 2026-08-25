@@ -27,6 +27,7 @@ final class DetectionWorker {
     private var filter: Biquad
     private var smoother: Smoother
     private let gate = NoiseGate()
+    private var stability = PitchStability()
     private var window: UnsafeMutablePointer<Float>
     private var windowCapacity: Int
     private var hopScratch: UnsafeMutablePointer<Float>
@@ -90,6 +91,7 @@ final class DetectionWorker {
             running = true
             gate.beginCalibration()
             smoother.reset()
+            stability.reset()
             filter.reset()
             filteredFilled = 0
             unvoicedHops = 0
@@ -201,6 +203,11 @@ final class DetectionWorker {
         let hopSeconds = Double(hopSize) / sampleRate
         let aboveGate = gate.update(rms: result.rms, dt: hopSeconds, pitchDetected: result.hasPitch)
 
+        // Clarity and level both pass on background speech; pitch stability does
+        // not. See PitchStability.
+        let steady = stability.admit(frequency: result.frequency,
+                                     voiced: result.hasPitch && aboveGate)
+
         var snapshot = DetectionSnapshot()
         snapshot.timestamp = CACurrentMediaTime()
         snapshot.rmsDB = NoiseGate.decibels(result.rms)
@@ -208,7 +215,7 @@ final class DetectionWorker {
         snapshot.sampleRate = sampleRate
         snapshot.windowSize = windowSize
 
-        if result.hasPitch, aboveGate {
+        if steady {
             let smoothed = smoother.process(hz: result.frequency, dt: hopSeconds)
             snapshot.frequency = smoothed
             snapshot.clarity = result.clarity
