@@ -244,6 +244,20 @@ final class PitchDetector {
         return count
     }
 
+    // MARK: - Spectrum reuse
+    //
+    // `process` computes |X|² into `inRe` on its way to the autocorrelation, and
+    // the inverse pass only reads it. So the power spectrum of the most recent
+    // frame is still sitting there afterwards, and harmonic scoring can use it
+    // without paying for a second FFT.
+
+    /// Power spectrum of the most recent `process` call. Valid until the next one.
+    var powerSpectrum: UnsafePointer<Float> { UnsafePointer(inRe) }
+    /// Usable bins: the spectrum is symmetric, so only the first half is meaningful.
+    var spectrumBins: Int { fftLength / 2 }
+    /// Hz per bin.
+    var binWidth: Double { sampleRate / Double(fftLength) }
+
     /// Exposed for tests: the raw NSDF of the most recent `process` call.
     func nsdfSnapshot() -> [Float] {
         Array(UnsafeBufferPointer(start: nsdf, count: tauMax + 2))

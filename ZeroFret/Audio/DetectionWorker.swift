@@ -45,6 +45,11 @@ final class DetectionWorker {
     private struct Config: Sendable {
         var responseMode: ResponseMode = .fast
         var windowSize: Int = 4096
+        /// The targets to score against. A tuner knows its own answers, and
+        /// restricting the hypothesis space is what stops the room being
+        /// mistaken for an instrument.
+        var targets: [Int] = TuningLibrary.standard.midiNotes
+        var referenceA: Double = 440
     }
     private let config = OSAllocatedUnfairLock(initialState: Config())
 
@@ -83,6 +88,11 @@ final class DetectionWorker {
     /// Called when the tuning family changes the required window (§3).
     func setWindowSize(_ size: Int) {
         config.withLock { $0.windowSize = size }
+    }
+
+    /// The frequencies the user is actually trying to hit.
+    func setTargets(_ midiNotes: [Int], referenceA: Double) {
+        config.withLock { $0.targets = midiNotes; $0.referenceA = referenceA }
     }
 
     func start() {
@@ -203,10 +213,24 @@ final class DetectionWorker {
         let hopSeconds = Double(hopSize) / sampleRate
         let aboveGate = gate.update(rms: result.rms, dt: hopSeconds, pitchDetected: result.hasPitch)
 
-        // Clarity and level both pass on background speech; pitch stability does
-        // not. See PitchStability.
+        // Score the tuning's targets against the spectrum the detector just
+        // computed. This is the "detection, not estimation" half: rather than
+        // estimating a frequency and then asking which string it is near, ask
+        // directly how well each string explains what arrived.
+        let (targets, referenceA) = config.withLock { ($0.targets, $0.referenceA) }
+        let scorer = HarmonicScorer(detector: detector)
+        let scored = scorer.detect(in: Tuning(id: "active", name: "", family: .guitar,
+                                              midiNotes: targets),
+                                   referenceA: referenceA)
+        let contrast = scored?.contrast ?? 0
+
+        // Multiplicative, never a single threshold — Tartini's rule. Clarity and
+        // level both pass on background speech; stability rejects most of it and
+        // contrast rejects broadband noise almost entirely. Neither alone is
+        // enough, and neither is a level gate.
+        let standsOut = contrast >= HarmonicScorer.minimumContrast
         let steady = stability.admit(frequency: result.frequency,
-                                     voiced: result.hasPitch && aboveGate)
+                                     voiced: result.hasPitch && aboveGate && standsOut)
 
         var snapshot = DetectionSnapshot()
         snapshot.timestamp = CACurrentMediaTime()
@@ -214,6 +238,8 @@ final class DetectionWorker {
         snapshot.gateDB = gate.thresholdDB
         snapshot.sampleRate = sampleRate
         snapshot.windowSize = windowSize
+        snapshot.contrast = contrast
+        snapshot.harmonicString = scored?.stringIndex ?? -1
 
         if steady {
             let smoothed = smoother.process(hz: result.frequency, dt: hopSeconds)

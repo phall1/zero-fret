@@ -72,6 +72,13 @@ Worth re-checking on device:
 | First reading after a pluck does not feel sluggish (128 ms settle) | ☐ |
 | Nothing displayed when the instrument is silent but the room is not | ☐ |
 | A bend still tracks smoothly rather than dropping the lock | ☐ |
+| Settings → Input reports `cardioid` rather than `omni` | ☐ |
+| Settings → Target contrast reads well above 4.5 on a plucked note, near 2 on an empty room | ☐ |
+| Every string names itself correctly, especially E4 (the 4th harmonic of E2) | ☐ |
+
+The Input and Target contrast rows exist precisely so these are checkable
+without a debugger. If Input says `omni`, the device did not offer a directional
+pattern and the cheapest defence is unavailable on that hardware.
 
 ## What the host suite deliberately does not prove
 

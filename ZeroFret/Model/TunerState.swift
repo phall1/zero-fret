@@ -27,6 +27,10 @@ struct DetectionSnapshot {
     var gateDB: Double = -50
     var sampleRate: Double = 48000
     var windowSize: Int = 4096
+    /// String chosen by harmonic scoring, or -1 when nothing scored.
+    var harmonicString: Int = -1
+    /// How far the winning target stood out from non-targets. See HarmonicScorer.
+    var contrast: Double = 0
 }
 
 /// Lock-free SPSC triple buffer for a trivially copyable payload.
@@ -117,6 +121,7 @@ struct SignalState: Equatable {
     var sampleRate = 48000.0
     var windowSize = 4096
     var clarity = 0.0
+    var contrast = 0.0
 }
 
 /// Everything the stage reads. Replaced only when a value actually changed, so a

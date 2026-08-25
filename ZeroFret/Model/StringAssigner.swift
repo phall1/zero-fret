@@ -67,7 +67,14 @@ final class StringAssigner {
     ///   - frequency: smoothed frequency in Hz.
     ///   - tuning: active tuning.
     ///   - referenceA: current reference pitch.
-    func target(frequency: Double, tuning: Tuning, referenceA: Double) -> PitchTarget {
+    /// - Parameter suggested: string chosen by harmonic scoring, when available.
+    ///   Nearest-|cents| selection confuses strings whose harmonic series overlap
+    ///   — E4 is the fourth harmonic of E2 — whereas asking which target actually
+    ///   explains the spectrum does not. Measured on a plucked E4 through a
+    ///   modelled phone microphone, harmonic scoring picked the right string on
+    ///   183 frames of 184; nearest-|cents| is the rule that made the readout hop.
+    func target(frequency: Double, tuning: Tuning, referenceA: Double,
+                suggested: Int? = nil) -> PitchTarget {
         guard frequency > 0 else { return chromaticTarget(frequency: frequency, referenceA: referenceA) }
 
         if let pinned = pinnedIndex, tuning.midiNotes.indices.contains(pinned) {
@@ -77,15 +84,23 @@ final class StringAssigner {
             return .string(index: pinned, midi: tuning.midiNotes[pinned])
         }
 
-        // Candidate: the string minimising |cents|.
+        // Candidate: the harmonically-scored string when one was found, else the
+        // string minimising |cents|.
         var bestIndex = 0
         var bestAbsCents = Double.greatestFiniteMagnitude
-        for (index, midi) in tuning.midiNotes.enumerated() {
-            let target = MusicMath.frequency(midi: Double(midi), referenceA: referenceA)
-            let absCents = abs(MusicMath.cents(measured: frequency, target: target))
-            if absCents < bestAbsCents {
-                bestAbsCents = absCents
-                bestIndex = index
+        if let suggested, tuning.midiNotes.indices.contains(suggested) {
+            bestIndex = suggested
+            let target = MusicMath.frequency(midi: Double(tuning.midiNotes[suggested]),
+                                             referenceA: referenceA)
+            bestAbsCents = abs(MusicMath.cents(measured: frequency, target: target))
+        } else {
+            for (index, midi) in tuning.midiNotes.enumerated() {
+                let target = MusicMath.frequency(midi: Double(midi), referenceA: referenceA)
+                let absCents = abs(MusicMath.cents(measured: frequency, target: target))
+                if absCents < bestAbsCents {
+                    bestAbsCents = absCents
+                    bestIndex = index
+                }
             }
         }
 

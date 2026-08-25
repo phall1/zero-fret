@@ -54,6 +54,8 @@ final class TunerEngine {
     /// True in the Simulator, where the input is generated. Surfaced so the UI
     /// can say so — a demo reading must never look like a real one.
     var isDemoSignal: Bool { audio.isSyntheticSource }
+    /// What the microphone is actually doing — cardioid if the device offered it.
+    var inputDescription: String { audio.inputDescription }
 
     // MARK: - Settings
 
@@ -77,6 +79,7 @@ final class TunerEngine {
             guard clamped != storedReferenceA else { return }
             storedReferenceA = clamped
             Defaults.referenceA = clamped
+            worker?.setTargets(tuning.midiNotes, referenceA: clamped)
         }
     }
 
@@ -117,6 +120,7 @@ final class TunerEngine {
             // that may not exist in the new tuning, so no chip matches.
             clearHeldReading()
             worker?.setWindowSize(tuning.windowSize)
+            worker?.setTargets(tuning.midiNotes, referenceA: referenceA)
         }
     }
 
@@ -226,6 +230,7 @@ final class TunerEngine {
         }
         worker?.responseMode = responseMode
         worker?.setWindowSize(tuning.windowSize)
+        worker?.setTargets(tuning.midiNotes, referenceA: referenceA)
 
         assigner.reset()
         tick.rearm()
@@ -292,7 +297,8 @@ final class TunerEngine {
                                           gateDB: snapshot.gateDB,
                                           sampleRate: snapshot.sampleRate,
                                           windowSize: snapshot.windowSize,
-                                          clarity: snapshot.clarity)
+                                          clarity: snapshot.clarity,
+                                          contrast: snapshot.contrast)
                 if updated != signal { signal = updated }
             }
 
@@ -348,7 +354,9 @@ final class TunerEngine {
         let previousTarget = heldTarget
         heldTarget = assigner.target(frequency: snapshot.frequency,
                                      tuning: tuning,
-                                     referenceA: referenceA)
+                                     referenceA: referenceA,
+                                     suggested: snapshot.harmonicString >= 0
+                                         ? snapshot.harmonicString : nil)
         // §7's latch is about one hand vibrating around zero on one string.
         // Moving to a different string is a new note and deserves its own tick,
         // or a string that happens to already be in tune stays silent.

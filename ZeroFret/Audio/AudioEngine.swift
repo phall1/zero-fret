@@ -158,6 +158,61 @@ final class AudioEngine {
         if session.isInputGainSettable {
             try? session.setInputGain(1.0)
         }
+
+        preferDirectionalInput()
+    }
+
+    /// Ask the built-in microphone for a cardioid pickup.
+    ///
+    /// The cheapest thing on the whole noise-rejection list: a directional
+    /// pattern attenuates a television across the room before a single sample
+    /// reaches the detector, and costs no DSP and no latency. Everything else in
+    /// this file works on the signal after it has already been polluted.
+    ///
+    /// `supportedPolarPatterns` is nullable and the set varies by device and by
+    /// which built-in microphone is selected, so every step is optional and
+    /// failure is silent — an omnidirectional capture is exactly what we had
+    /// before.
+    private func preferDirectionalInput() {
+        guard let input = session.availableInputs?.first(where: { $0.portType == .builtInMic }),
+              let sources = input.dataSources, !sources.isEmpty else { return }
+
+        // Prefer a source that can do cardioid; fall back to subcardioid, which
+        // is still tighter than omni.
+        let wanted: [AVAudioSession.PolarPattern] = [.cardioid, .subcardioid]
+        for pattern in wanted {
+            guard let source = sources.first(where: {
+                $0.supportedPolarPatterns?.contains(pattern) ?? false
+            }) else { continue }
+            do {
+                try source.setPreferredPolarPattern(pattern)
+                try input.setPreferredDataSource(source)
+                try session.setPreferredInput(input)
+                log.info("input: \(source.dataSourceName, privacy: .public) / \(pattern.rawValue, privacy: .public)")
+                return
+            } catch {
+                log.error("polar pattern \(pattern.rawValue, privacy: .public) failed: \(error.localizedDescription, privacy: .public)")
+            }
+        }
+    }
+
+    /// What the input is actually doing, for the Settings readout.
+    var inputDescription: String {
+        #if targetEnvironment(simulator)
+        return "Synthetic"
+        #else
+        guard let input = session.availableInputs?.first(where: { $0.portType == .builtInMic }),
+              let source = input.selectedDataSource else { return "Built-in" }
+        let pattern = source.selectedPolarPattern ?? .omnidirectional
+        let name: String
+        switch pattern {
+        case .cardioid:    name = "cardioid"
+        case .subcardioid: name = "subcardioid"
+        case .stereo:      name = "stereo"
+        default:           name = "omni"
+        }
+        return "\(source.dataSourceName) · \(name)"
+        #endif
     }
 
     private func installTapAndStart() throws {

@@ -102,10 +102,13 @@ struct SettingsView: View {
                                    value: "\(engine.signal.windowSize) samples")
                     LabeledContent("Clarity",
                                    value: String(format: "%.2f", engine.signal.clarity))
+                    LabeledContent("Target contrast",
+                                   value: String(format: "%.1f×", engine.signal.contrast))
+                    LabeledContent("Input", value: engine.inputDescription)
                 } header: {
                     Text("Signal")
                 } footer: {
-                    Text("The gate re-calibrates itself after five seconds of silence. The sample rate is whatever the current route actually reports — it is never assumed.")
+                    Text("Contrast is how far the best-fitting string stands out from frequencies that are not strings at all; a plucked note reads well above 4.5, a room reads near 2. The gate learns the room only from moments when nothing is playing, and the sample rate is whatever the route actually reports.")
                 }
                 .listRowBackground(Theme.stageRaised)
                 .font(.system(.body, design: .rounded).monospacedDigit())

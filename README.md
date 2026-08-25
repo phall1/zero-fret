@@ -68,17 +68,32 @@ NSDF peak at or above 0.9 × max, not the global maximum — the global maximum 
 at 2τ or 3τ often enough that naive tuners read low E as E3. Parabolic
 interpolation on the chosen peak; without it the resolution floor is ~6¢ at E4.
 
-**Telling the instrument from the room.** Three gates, in order. Level, against
-a noise floor learned *only* from frames with no detected pitch — measuring it
-regardless of what is playing makes a ringing note its own floor, and the gate
-then mutes the note as it decays. Clarity, per §3. And pitch stability, which is
-the one that does the work: a plucked string settles onto a pitch and stays
-there (6-frame spread ~6 cents) while speech glides continuously (~41 cents).
+**Telling the instrument from the room.** A tuner knows its own answers: there
+are six of them. So rather than estimating a frequency and then asking which
+string it lands near, the detector asks how well each *target* explains the
+spectrum — the shape of TC Electronic's PolyTune patent and of moekadu Tuner's
+harmonic energy measure.
 
-Clarity deliberately is *not* the discriminator here. Measured through a
-modelled phone microphone, background speech scores 0.994 against a plucked
-string's 0.921 — a glottal pulse train is extremely periodic — so raising the
-clarity floor rejects the instrument and keeps the interference.
+Four things gate a reading, multiplicatively, because no single one is enough:
+
+- **Directional pickup.** A cardioid polar pattern where the device offers one,
+  which attenuates a television across the room before a sample is captured.
+- **Level**, against a floor learned *only* from frames with no detected pitch.
+  Measuring it regardless of what is playing makes a ringing note its own floor,
+  and the gate then mutes the note as it decays.
+- **Contrast** — how far the best-fitting string stands out from frequencies
+  that are not strings at all. A real note makes a sharp peak; broadband noise
+  raises every hypothesis equally. Measured medians: guitar 7.2–28.9, background
+  speech 4.3–5.6, room noise 2.1.
+- **Pitch stability**, because a plucked string settles and stays put while
+  speech glides.
+
+Clarity deliberately is *not* among them. Measured through a modelled phone
+microphone, background speech scores 0.994 against a plucked string's 0.921 — a
+glottal pulse train is extremely periodic — so raising a clarity floor rejects
+the instrument and keeps the interference. Absolute harmonic energy is out for
+the same reason: A2 measured 0.147 against speech at 0.221, so only the
+*contrast* between target and non-target is comparable across strings.
 
 **Smoothing.** Median-of-5 then a one-euro filter, on frequency in Hz. The median
 is first because a surviving octave error is exactly one wild frame — a mean
@@ -107,7 +122,7 @@ and `Config/Signing.example.xcconfig` shows what goes in it.
 ZeroFret/
   App/        entry point, Info.plist
   Audio/      session, ring buffer, biquad, MPM detector, smoothing,
-              noise gate, pitch-stability gate
+              noise gate, harmonic target scoring, pitch-stability gate
   Model/      tuning maths, string assignment, snapshot buffer, coordinator
   View/       stage, string canvas, tuning sheet, settings
   Haptics/    the latch that stops the tick machine-gunning
