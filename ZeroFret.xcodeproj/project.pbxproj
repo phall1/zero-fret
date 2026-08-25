@@ -1,0 +1,611 @@
+// !$*UTF8*$!
+{
+	archiveVersion = 1;
+	classes = {
+	};
+	objectVersion = 56;
+	objects = {
+
+/* Begin PBXBuildFile section */
+		96B5A6C4C70201B6061C1B68 /* ZeroFretApp.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8028F44BE6CC78B725EE7036 /* ZeroFretApp.swift */; };
+		7B0C8F26A17746567A119127 /* AudioEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7EB6226304D8C759D6C4ADFE /* AudioEngine.swift */; };
+		DED38DF1B89DD0AFAE01AC41 /* RingBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95A04407A6E98DEAE6CF2EC4 /* RingBuffer.swift */; };
+		A24D4A777AC99B1E72D30220 /* Biquad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87C4767F12944DFA7BEE6E9B /* Biquad.swift */; };
+		738C4DBBA9AE796EBECEF17C /* PitchDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60B68BEC2B348260DF12230D /* PitchDetector.swift */; };
+		22FD69098B45AE67BED3271E /* Smoother.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B723272C286BFAA306F34E7 /* Smoother.swift */; };
+		04F0642247B3AF69F61CA9E3 /* NoiseGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4B8E00100D2A59C23A56853 /* NoiseGate.swift */; };
+		A8A16C5EE9C9BA8E9EBAD86D /* DetectionWorker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667328023832E92E7863EACF /* DetectionWorker.swift */; };
+		4A6733DDC7510D6FAD3A0673 /* SyntheticInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2344FA0C5111C86D9816763 /* SyntheticInput.swift */; };
+		C5023DBA0EA8D1974E866CE4 /* Tuning.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE58EC0660EE212EE97129FD /* Tuning.swift */; };
+		D088D2875E14984E48E762AC /* TunerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D27E16B0947C411121E177B9 /* TunerState.swift */; };
+		3FA0B40FC751DB144F7E749E /* StringAssigner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 533A60FA54815C50565EF4AF /* StringAssigner.swift */; };
+		49360CF0CD964B57FEF5FA4B /* TunerEngine.swift in Sources */ = {isa = PBXBuildFile; fileRef = 99363D9CDC66EDD1B80E0DC9 /* TunerEngine.swift */; };
+		187B00DDEBC42566FA35219E /* Theme.swift in Sources */ = {isa = PBXBuildFile; fileRef = A3594F1218DCC675F8AA506F /* Theme.swift */; };
+		73BDB16B30BB84DB9B90AD1D /* TunerView.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0DB5A93FE28780AF1AE19AF2 /* TunerView.swift */; };
+		A6DC012F23C0F9B79EAAA9E4 /* StringCanvas.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5E6D7524050402C517E76F26 /* StringCanvas.swift */; };
+		887C9AFB1C3878A77DAD3B50 /* TuningSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E7F4E03BF73B89477ACD54C /* TuningSheet.swift */; };
+		4BD1620640D408BDE048719A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF1D2C271BFAA6BC6872C64D /* SettingsView.swift */; };
+		2FB173E80381FB6ACB6AAE04 /* TrueTick.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE1B96165915B017BE7CA91B /* TrueTick.swift */; };
+		721AC80443DCE03FBC65BE01 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1466E1023C997038016907D1 /* Assets.xcassets */; };
+		E26D50F66BB1171D2AB7839D /* RingBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95A04407A6E98DEAE6CF2EC4 /* RingBuffer.swift */; };
+		58A1EA2868DE213CE5E06DC5 /* Biquad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87C4767F12944DFA7BEE6E9B /* Biquad.swift */; };
+		FBDACF4AB901F3B18B195A4E /* PitchDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60B68BEC2B348260DF12230D /* PitchDetector.swift */; };
+		28289C910A3FBF81F5CEC025 /* Smoother.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5B723272C286BFAA306F34E7 /* Smoother.swift */; };
+		BFF2AB65F1894B56EDAFE416 /* NoiseGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4B8E00100D2A59C23A56853 /* NoiseGate.swift */; };
+		232AD04E91E9E52FAF456276 /* Tuning.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE58EC0660EE212EE97129FD /* Tuning.swift */; };
+		D953D7C4D5AAFEFCCE3D086A /* TunerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D27E16B0947C411121E177B9 /* TunerState.swift */; };
+		AC074B463160870A52810CC4 /* StringAssigner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 533A60FA54815C50565EF4AF /* StringAssigner.swift */; };
+		6DFB2C7333264B477EB79226 /* SignalHarness.swift in Sources */ = {isa = PBXBuildFile; fileRef = 0C5EB9D703C88D5D92F7FC42 /* SignalHarness.swift */; };
+		D6B7161A3C52E23089E75519 /* MusicMathTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5196AFDE3D8406B392D039EB /* MusicMathTests.swift */; };
+		63300CE50982037A1B5DF574 /* RingBufferTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 899E31396A8868EBE7B41FB0 /* RingBufferTests.swift */; };
+		AEBCB56F0FF73130E62BCC44 /* BiquadTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 1BF3D8D32A377639CF0C34FE /* BiquadTests.swift */; };
+		784A2C79E40E8B82CDA8BF0B /* PitchDetectorTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = EFBD559D19B5989FFB2827AB /* PitchDetectorTests.swift */; };
+		AE20E59F6A01F8BCD76F23B3 /* SmootherTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 479C128B88DD7679A60E28A5 /* SmootherTests.swift */; };
+		09E8523EFBF05297E134844C /* StringAssignerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8383CB33C1BBA8699EEA79A2 /* StringAssignerTests.swift */; };
+		61EE68069C0FB9FA1FAB1D2D /* NoiseGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AAB86749BE67E74A64F3D5E /* NoiseGateTests.swift */; };
+		DD982EA135731D8060606896 /* AcceptanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A7492A8B8E69713AEDE15BF /* AcceptanceTests.swift */; };
+/* End PBXBuildFile section */
+
+/* Begin PBXFileReference section */
+		4989FE9F42EB12E5793A0930 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		8028F44BE6CC78B725EE7036 /* ZeroFretApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZeroFretApp.swift; sourceTree = "<group>"; };
+		1466E1023C997038016907D1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
+		7EB6226304D8C759D6C4ADFE /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
+		87C4767F12944DFA7BEE6E9B /* Biquad.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Biquad.swift; sourceTree = "<group>"; };
+		667328023832E92E7863EACF /* DetectionWorker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DetectionWorker.swift; sourceTree = "<group>"; };
+		F4B8E00100D2A59C23A56853 /* NoiseGate.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoiseGate.swift; sourceTree = "<group>"; };
+		60B68BEC2B348260DF12230D /* PitchDetector.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PitchDetector.swift; sourceTree = "<group>"; };
+		95A04407A6E98DEAE6CF2EC4 /* RingBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RingBuffer.swift; sourceTree = "<group>"; };
+		5B723272C286BFAA306F34E7 /* Smoother.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Smoother.swift; sourceTree = "<group>"; };
+		D2344FA0C5111C86D9816763 /* SyntheticInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntheticInput.swift; sourceTree = "<group>"; };
+		DE1B96165915B017BE7CA91B /* TrueTick.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrueTick.swift; sourceTree = "<group>"; };
+		533A60FA54815C50565EF4AF /* StringAssigner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringAssigner.swift; sourceTree = "<group>"; };
+		99363D9CDC66EDD1B80E0DC9 /* TunerEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerEngine.swift; sourceTree = "<group>"; };
+		D27E16B0947C411121E177B9 /* TunerState.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerState.swift; sourceTree = "<group>"; };
+		DE58EC0660EE212EE97129FD /* Tuning.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Tuning.swift; sourceTree = "<group>"; };
+		EB010AB4CB55AD8F26AC79A8 /* ZFAtomics.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ZFAtomics.h; sourceTree = "<group>"; };
+		F24D2FFB1BB15893EF698BA4 /* ZeroFret-Bridging-Header.h */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.c.h; path = ZeroFret-Bridging-Header.h; sourceTree = "<group>"; };
+		EF1D2C271BFAA6BC6872C64D /* SettingsView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SettingsView.swift; sourceTree = "<group>"; };
+		5E6D7524050402C517E76F26 /* StringCanvas.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringCanvas.swift; sourceTree = "<group>"; };
+		A3594F1218DCC675F8AA506F /* Theme.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Theme.swift; sourceTree = "<group>"; };
+		0DB5A93FE28780AF1AE19AF2 /* TunerView.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerView.swift; sourceTree = "<group>"; };
+		2E7F4E03BF73B89477ACD54C /* TuningSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TuningSheet.swift; sourceTree = "<group>"; };
+		7A7492A8B8E69713AEDE15BF /* AcceptanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcceptanceTests.swift; sourceTree = "<group>"; };
+		1BF3D8D32A377639CF0C34FE /* BiquadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiquadTests.swift; sourceTree = "<group>"; };
+		5196AFDE3D8406B392D039EB /* MusicMathTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicMathTests.swift; sourceTree = "<group>"; };
+		9AAB86749BE67E74A64F3D5E /* NoiseGateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = NoiseGateTests.swift; sourceTree = "<group>"; };
+		EFBD559D19B5989FFB2827AB /* PitchDetectorTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = PitchDetectorTests.swift; sourceTree = "<group>"; };
+		899E31396A8868EBE7B41FB0 /* RingBufferTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RingBufferTests.swift; sourceTree = "<group>"; };
+		0C5EB9D703C88D5D92F7FC42 /* SignalHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalHarness.swift; sourceTree = "<group>"; };
+		479C128B88DD7679A60E28A5 /* SmootherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmootherTests.swift; sourceTree = "<group>"; };
+		8383CB33C1BBA8699EEA79A2 /* StringAssignerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringAssignerTests.swift; sourceTree = "<group>"; };
+		DF58D1B925D2AC2EF4D39B94 /* ZeroFret.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ZeroFret.app; sourceTree = BUILT_PRODUCTS_DIR; };
+		9E75572345651C6D286CCC7C /* ZeroFretTests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ZeroFretTests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
+		DAF3FDF9521C1E5954881FC0 /* README.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = README.md; sourceTree = "<group>"; };
+		EE9A665AAB0CAA77392CC4A3 /* zero-fret-og-spec.md */ = {isa = PBXFileReference; lastKnownFileType = net.daringfireball.markdown; path = zero-fret-og-spec.md; sourceTree = "<group>"; };
+		6BCB066A9D10A5A68C163C9A /* LICENSE */ = {isa = PBXFileReference; lastKnownFileType = text; path = LICENSE; sourceTree = "<group>"; };
+		FAFDBD1F83DDA4B0A5F318A7 /* Base.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Base.xcconfig; sourceTree = "<group>"; };
+		BE13C2565C0E9E0202306193 /* Signing.example.xcconfig */ = {isa = PBXFileReference; lastKnownFileType = text.xcconfig; path = Signing.example.xcconfig; sourceTree = "<group>"; };
+/* End PBXFileReference section */
+
+/* Begin PBXFrameworksBuildPhase section */
+		555D8A0F2F9E053C94DAB030 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		FB6FF44D60092A977417C9A1 /* Frameworks */ = {
+			isa = PBXFrameworksBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXFrameworksBuildPhase section */
+
+/* Begin PBXGroup section */
+		2049DD8C16C78BC55B8770CD /* App */ = {
+			isa = PBXGroup;
+			children = (
+				4989FE9F42EB12E5793A0930 /* Info.plist */,
+				8028F44BE6CC78B725EE7036 /* ZeroFretApp.swift */,
+			);
+			path = App;
+			sourceTree = "<group>";
+		};
+		4BC7EEFD1291E489BD2073D9 /* Audio */ = {
+			isa = PBXGroup;
+			children = (
+				7EB6226304D8C759D6C4ADFE /* AudioEngine.swift */,
+				87C4767F12944DFA7BEE6E9B /* Biquad.swift */,
+				667328023832E92E7863EACF /* DetectionWorker.swift */,
+				F4B8E00100D2A59C23A56853 /* NoiseGate.swift */,
+				60B68BEC2B348260DF12230D /* PitchDetector.swift */,
+				95A04407A6E98DEAE6CF2EC4 /* RingBuffer.swift */,
+				5B723272C286BFAA306F34E7 /* Smoother.swift */,
+				D2344FA0C5111C86D9816763 /* SyntheticInput.swift */,
+			);
+			path = Audio;
+			sourceTree = "<group>";
+		};
+		DBC2CA6F6CD118765E53A0D2 /* Model */ = {
+			isa = PBXGroup;
+			children = (
+				533A60FA54815C50565EF4AF /* StringAssigner.swift */,
+				99363D9CDC66EDD1B80E0DC9 /* TunerEngine.swift */,
+				D27E16B0947C411121E177B9 /* TunerState.swift */,
+				DE58EC0660EE212EE97129FD /* Tuning.swift */,
+			);
+			path = Model;
+			sourceTree = "<group>";
+		};
+		62B7D6006CF57B064F8D9E71 /* View */ = {
+			isa = PBXGroup;
+			children = (
+				EF1D2C271BFAA6BC6872C64D /* SettingsView.swift */,
+				5E6D7524050402C517E76F26 /* StringCanvas.swift */,
+				A3594F1218DCC675F8AA506F /* Theme.swift */,
+				0DB5A93FE28780AF1AE19AF2 /* TunerView.swift */,
+				2E7F4E03BF73B89477ACD54C /* TuningSheet.swift */,
+			);
+			path = View;
+			sourceTree = "<group>";
+		};
+		709C15BC3FA1E9CD3FE98A8F /* Haptics */ = {
+			isa = PBXGroup;
+			children = (
+				DE1B96165915B017BE7CA91B /* TrueTick.swift */,
+			);
+			path = Haptics;
+			sourceTree = "<group>";
+		};
+		AC999C4929224C9E3AB7A3E5 /* Support */ = {
+			isa = PBXGroup;
+			children = (
+				EB010AB4CB55AD8F26AC79A8 /* ZFAtomics.h */,
+				F24D2FFB1BB15893EF698BA4 /* ZeroFret-Bridging-Header.h */,
+			);
+			path = Support;
+			sourceTree = "<group>";
+		};
+		7B93E870EFED3BCCAF72FDFA /* ZeroFret */ = {
+			isa = PBXGroup;
+			children = (
+				2049DD8C16C78BC55B8770CD /* App */,
+				4BC7EEFD1291E489BD2073D9 /* Audio */,
+				DBC2CA6F6CD118765E53A0D2 /* Model */,
+				62B7D6006CF57B064F8D9E71 /* View */,
+				709C15BC3FA1E9CD3FE98A8F /* Haptics */,
+				AC999C4929224C9E3AB7A3E5 /* Support */,
+				1466E1023C997038016907D1 /* Assets.xcassets */,
+			);
+			path = ZeroFret;
+			sourceTree = "<group>";
+		};
+		3C9D7025110E36ACD7FC1957 /* ZeroFretTests */ = {
+			isa = PBXGroup;
+			children = (
+				0C5EB9D703C88D5D92F7FC42 /* SignalHarness.swift */,
+				5196AFDE3D8406B392D039EB /* MusicMathTests.swift */,
+				899E31396A8868EBE7B41FB0 /* RingBufferTests.swift */,
+				1BF3D8D32A377639CF0C34FE /* BiquadTests.swift */,
+				EFBD559D19B5989FFB2827AB /* PitchDetectorTests.swift */,
+				479C128B88DD7679A60E28A5 /* SmootherTests.swift */,
+				8383CB33C1BBA8699EEA79A2 /* StringAssignerTests.swift */,
+				9AAB86749BE67E74A64F3D5E /* NoiseGateTests.swift */,
+				7A7492A8B8E69713AEDE15BF /* AcceptanceTests.swift */,
+			);
+			path = ZeroFretTests;
+			sourceTree = "<group>";
+		};
+		4344A1DDC8A27006D6D32B6E /* Config */ = {
+			isa = PBXGroup;
+			children = (
+				FAFDBD1F83DDA4B0A5F318A7 /* Base.xcconfig */,
+				BE13C2565C0E9E0202306193 /* Signing.example.xcconfig */,
+			);
+			path = Config;
+			sourceTree = "<group>";
+		};
+		0983884E151F68C9BCF75650 /* Products */ = {
+			isa = PBXGroup;
+			children = (
+				DF58D1B925D2AC2EF4D39B94 /* ZeroFret.app */,
+				9E75572345651C6D286CCC7C /* ZeroFretTests.xctest */,
+			);
+			name = Products;
+			sourceTree = "<group>";
+		};
+		6FCF288E882BE287B895F6EE = {
+			isa = PBXGroup;
+			children = (
+				DAF3FDF9521C1E5954881FC0 /* README.md */,
+				6BCB066A9D10A5A68C163C9A /* LICENSE */,
+				EE9A665AAB0CAA77392CC4A3 /* zero-fret-og-spec.md */,
+				4344A1DDC8A27006D6D32B6E /* Config */,
+				7B93E870EFED3BCCAF72FDFA /* ZeroFret */,
+				3C9D7025110E36ACD7FC1957 /* ZeroFretTests */,
+				0983884E151F68C9BCF75650 /* Products */,
+			);
+			sourceTree = "<group>";
+		};
+/* End PBXGroup section */
+
+/* Begin PBXNativeTarget section */
+		98743F6768174D6529E2C21B /* ZeroFret */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = FF91A8177031095FBB442771 /* Build configuration list for PBXNativeTarget "ZeroFret" */;
+			buildPhases = (
+				92D10A955999F3BB4CE13037 /* Sources */,
+				555D8A0F2F9E053C94DAB030 /* Frameworks */,
+				A1F681963304D7D8F5DD304A /* Resources */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ZeroFret;
+			productName = ZeroFret;
+			productReference = DF58D1B925D2AC2EF4D39B94 /* ZeroFret.app */;
+			productType = "com.apple.product-type.application";
+		};
+		474B7DCC6F1F29ADC10AA85E /* ZeroFretTests */ = {
+			isa = PBXNativeTarget;
+			buildConfigurationList = 7F16B0862EE7FB85E5F63A1F /* Build configuration list for PBXNativeTarget "ZeroFretTests" */;
+			buildPhases = (
+				EA416CAF69F7A92E1D0A16B9 /* Sources */,
+				FB6FF44D60092A977417C9A1 /* Frameworks */,
+			);
+			buildRules = (
+			);
+			dependencies = (
+			);
+			name = ZeroFretTests;
+			productName = ZeroFretTests;
+			productReference = 9E75572345651C6D286CCC7C /* ZeroFretTests.xctest */;
+			productType = "com.apple.product-type.bundle.unit-test";
+		};
+/* End PBXNativeTarget section */
+
+/* Begin PBXProject section */
+		5479F2934B628A765ACCFA8F /* Project object */ = {
+			isa = PBXProject;
+			attributes = {
+				BuildIndependentTargetsInParallel = 1;
+				LastSwiftUpdateCheck = 2660;
+				LastUpgradeCheck = 2660;
+				TargetAttributes = {
+					98743F6768174D6529E2C21B = {
+						CreatedOnToolsVersion = 26.0;
+					};
+					474B7DCC6F1F29ADC10AA85E = {
+						CreatedOnToolsVersion = 26.0;
+					};
+				};
+			};
+			buildConfigurationList = 788570E7A4CDAC502B83B836 /* Build configuration list for PBXProject "ZeroFret" */;
+			compatibilityVersion = "Xcode 14.0";
+			developmentRegion = en;
+			hasScannedForEncodings = 0;
+			knownRegions = (
+				en,
+				Base,
+			);
+			mainGroup = 6FCF288E882BE287B895F6EE;
+			productRefGroup = 0983884E151F68C9BCF75650 /* Products */;
+			projectDirPath = "";
+			projectRoot = "";
+			targets = (
+				98743F6768174D6529E2C21B /* ZeroFret */,
+				474B7DCC6F1F29ADC10AA85E /* ZeroFretTests */,
+			);
+		};
+/* End PBXProject section */
+
+/* Begin PBXResourcesBuildPhase section */
+		A1F681963304D7D8F5DD304A /* Resources */ = {
+			isa = PBXResourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				721AC80443DCE03FBC65BE01 /* Assets.xcassets in Resources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXResourcesBuildPhase section */
+
+/* Begin PBXSourcesBuildPhase section */
+		92D10A955999F3BB4CE13037 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				96B5A6C4C70201B6061C1B68 /* ZeroFretApp.swift in Sources */,
+				7B0C8F26A17746567A119127 /* AudioEngine.swift in Sources */,
+				DED38DF1B89DD0AFAE01AC41 /* RingBuffer.swift in Sources */,
+				A24D4A777AC99B1E72D30220 /* Biquad.swift in Sources */,
+				738C4DBBA9AE796EBECEF17C /* PitchDetector.swift in Sources */,
+				22FD69098B45AE67BED3271E /* Smoother.swift in Sources */,
+				04F0642247B3AF69F61CA9E3 /* NoiseGate.swift in Sources */,
+				A8A16C5EE9C9BA8E9EBAD86D /* DetectionWorker.swift in Sources */,
+				4A6733DDC7510D6FAD3A0673 /* SyntheticInput.swift in Sources */,
+				C5023DBA0EA8D1974E866CE4 /* Tuning.swift in Sources */,
+				D088D2875E14984E48E762AC /* TunerState.swift in Sources */,
+				3FA0B40FC751DB144F7E749E /* StringAssigner.swift in Sources */,
+				49360CF0CD964B57FEF5FA4B /* TunerEngine.swift in Sources */,
+				187B00DDEBC42566FA35219E /* Theme.swift in Sources */,
+				73BDB16B30BB84DB9B90AD1D /* TunerView.swift in Sources */,
+				A6DC012F23C0F9B79EAAA9E4 /* StringCanvas.swift in Sources */,
+				887C9AFB1C3878A77DAD3B50 /* TuningSheet.swift in Sources */,
+				4BD1620640D408BDE048719A /* SettingsView.swift in Sources */,
+				2FB173E80381FB6ACB6AAE04 /* TrueTick.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+		EA416CAF69F7A92E1D0A16B9 /* Sources */ = {
+			isa = PBXSourcesBuildPhase;
+			buildActionMask = 2147483647;
+			files = (
+				E26D50F66BB1171D2AB7839D /* RingBuffer.swift in Sources */,
+				58A1EA2868DE213CE5E06DC5 /* Biquad.swift in Sources */,
+				FBDACF4AB901F3B18B195A4E /* PitchDetector.swift in Sources */,
+				28289C910A3FBF81F5CEC025 /* Smoother.swift in Sources */,
+				BFF2AB65F1894B56EDAFE416 /* NoiseGate.swift in Sources */,
+				232AD04E91E9E52FAF456276 /* Tuning.swift in Sources */,
+				D953D7C4D5AAFEFCCE3D086A /* TunerState.swift in Sources */,
+				AC074B463160870A52810CC4 /* StringAssigner.swift in Sources */,
+				6DFB2C7333264B477EB79226 /* SignalHarness.swift in Sources */,
+				D6B7161A3C52E23089E75519 /* MusicMathTests.swift in Sources */,
+				63300CE50982037A1B5DF574 /* RingBufferTests.swift in Sources */,
+				AEBCB56F0FF73130E62BCC44 /* BiquadTests.swift in Sources */,
+				784A2C79E40E8B82CDA8BF0B /* PitchDetectorTests.swift in Sources */,
+				AE20E59F6A01F8BCD76F23B3 /* SmootherTests.swift in Sources */,
+				09E8523EFBF05297E134844C /* StringAssignerTests.swift in Sources */,
+				61EE68069C0FB9FA1FAB1D2D /* NoiseGateTests.swift in Sources */,
+				DD982EA135731D8060606896 /* AcceptanceTests.swift in Sources */,
+			);
+			runOnlyForDeploymentPostprocessing = 0;
+		};
+/* End PBXSourcesBuildPhase section */
+
+/* Begin XCBuildConfiguration section */
+		FA34FD7FC037736BFC2AF3FF /* Debug */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = dwarf;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_TESTABILITY = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_DYNAMIC_NO_PIC = NO;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_OPTIMIZATION_LEVEL = 0;
+				GCC_PREPROCESSOR_DEFINITIONS = (
+					"DEBUG=1",
+					"$(inherited)",
+				);
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = INCLUDE_SOURCE;
+				MTL_FAST_MATH = YES;
+				ONLY_ACTIVE_ARCH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_ACTIVE_COMPILATION_CONDITIONS = "DEBUG $(inherited)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OPTIMIZATION_LEVEL = "-Onone";
+				SWIFT_VERSION = 5.0;
+			};
+			name = Debug;
+		};
+		4EEB6C4AF4C1B7BB01409916 /* Release */ = {
+			isa = XCBuildConfiguration;
+			buildSettings = {
+				ALWAYS_SEARCH_USER_PATHS = NO;
+				ASSETCATALOG_COMPILER_GENERATE_SWIFT_ASSET_SYMBOL_EXTENSIONS = YES;
+				CLANG_ANALYZER_NONNULL = YES;
+				CLANG_ANALYZER_NUMBER_OBJECT_CONVERSION = YES_AGGRESSIVE;
+				CLANG_CXX_LANGUAGE_STANDARD = "gnu++20";
+				CLANG_ENABLE_MODULES = YES;
+				CLANG_ENABLE_OBJC_ARC = YES;
+				CLANG_ENABLE_OBJC_WEAK = YES;
+				CLANG_WARN_BLOCK_CAPTURE_AUTORELEASING = YES;
+				CLANG_WARN_BOOL_CONVERSION = YES;
+				CLANG_WARN_COMMA = YES;
+				CLANG_WARN_CONSTANT_CONVERSION = YES;
+				CLANG_WARN_DEPRECATED_OBJC_IMPLEMENTATIONS = YES;
+				CLANG_WARN_DIRECT_OBJC_ISA_USAGE = YES_ERROR;
+				CLANG_WARN_DOCUMENTATION_COMMENTS = YES;
+				CLANG_WARN_EMPTY_BODY = YES;
+				CLANG_WARN_ENUM_CONVERSION = YES;
+				CLANG_WARN_INFINITE_RECURSION = YES;
+				CLANG_WARN_INT_CONVERSION = YES;
+				CLANG_WARN_NON_LITERAL_NULL_CONVERSION = YES;
+				CLANG_WARN_OBJC_IMPLICIT_RETAIN_SELF = YES;
+				CLANG_WARN_OBJC_LITERAL_CONVERSION = YES;
+				CLANG_WARN_OBJC_ROOT_CLASS = YES_ERROR;
+				CLANG_WARN_QUOTED_INCLUDE_IN_FRAMEWORK_HEADER = YES;
+				CLANG_WARN_RANGE_LOOP_ANALYSIS = YES;
+				CLANG_WARN_STRICT_PROTOTYPES = YES;
+				CLANG_WARN_SUSPICIOUS_MOVE = YES;
+				CLANG_WARN_UNGUARDED_AVAILABILITY = YES_AGGRESSIVE;
+				CLANG_WARN_UNREACHABLE_CODE = YES;
+				CLANG_WARN__DUPLICATE_METHOD_MATCH = YES;
+				COPY_PHASE_STRIP = NO;
+				DEBUG_INFORMATION_FORMAT = "dwarf-with-dsym";
+				ENABLE_NS_ASSERTIONS = NO;
+				ENABLE_STRICT_OBJC_MSGSEND = YES;
+				ENABLE_USER_SCRIPT_SANDBOXING = YES;
+				GCC_C_LANGUAGE_STANDARD = gnu17;
+				GCC_NO_COMMON_BLOCKS = YES;
+				GCC_WARN_64_TO_32_BIT_CONVERSION = YES;
+				GCC_WARN_ABOUT_RETURN_TYPE = YES_ERROR;
+				GCC_WARN_UNDECLARED_SELECTOR = YES;
+				GCC_WARN_UNINITIALIZED_AUTOS = YES_AGGRESSIVE;
+				GCC_WARN_UNUSED_FUNCTION = YES;
+				GCC_WARN_UNUSED_VARIABLE = YES;
+				IPHONEOS_DEPLOYMENT_TARGET = 17.0;
+				LOCALIZATION_PREFERS_STRING_CATALOGS = YES;
+				MTL_ENABLE_DEBUG_INFO = NO;
+				MTL_FAST_MATH = YES;
+				SDKROOT = iphoneos;
+				SWIFT_COMPILATION_MODE = wholemodule;
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_VERSION = 5.0;
+				VALIDATE_PRODUCT = YES;
+			};
+			name = Release;
+		};
+		421915FEB7CFEC10A7E412A7 /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = FAFDBD1F83DDA4B0A5F318A7 /* Base.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ZeroFret/App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.phux.zerofret;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "ZeroFret/Support/ZeroFret-Bridging-Header.h";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		CDB9B01CAF383C6907C37855 /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = FAFDBD1F83DDA4B0A5F318A7 /* Base.xcconfig */;
+			buildSettings = {
+				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
+				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				DEVELOPMENT_ASSET_PATHS = "";
+				ENABLE_PREVIEWS = YES;
+				GENERATE_INFOPLIST_FILE = NO;
+				INFOPLIST_FILE = ZeroFret/App/Info.plist;
+				LD_RUNPATH_SEARCH_PATHS = (
+					"$(inherited)",
+					"@executable_path/Frameworks",
+				);
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.phux.zerofret;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_EMIT_LOC_STRINGS = YES;
+				SWIFT_OBJC_BRIDGING_HEADER = "ZeroFret/Support/ZeroFret-Bridging-Header.h";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+		8B70AF19F4460F4C92BAAFAB /* Debug */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = FAFDBD1F83DDA4B0A5F318A7 /* Base.xcconfig */;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.phux.zerofret.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "ZeroFret/Support/ZeroFret-Bridging-Header.h";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Debug;
+		};
+		7CB9A77F87C89F6B2D9C7A9E /* Release */ = {
+			isa = XCBuildConfiguration;
+			baseConfigurationReference = FAFDBD1F83DDA4B0A5F318A7 /* Base.xcconfig */;
+			buildSettings = {
+				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
+				CODE_SIGN_STYLE = Automatic;
+				CURRENT_PROJECT_VERSION = 1;
+				GENERATE_INFOPLIST_FILE = YES;
+				MARKETING_VERSION = 1.0;
+				PRODUCT_BUNDLE_IDENTIFIER = dev.phux.zerofret.tests;
+				PRODUCT_NAME = "$(TARGET_NAME)";
+				SWIFT_OBJC_BRIDGING_HEADER = "ZeroFret/Support/ZeroFret-Bridging-Header.h";
+				TARGETED_DEVICE_FAMILY = "1,2";
+			};
+			name = Release;
+		};
+/* End XCBuildConfiguration section */
+
+/* Begin XCConfigurationList section */
+		788570E7A4CDAC502B83B836 /* Build configuration list for PBXProject "ZeroFret" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				FA34FD7FC037736BFC2AF3FF /* Debug */,
+				4EEB6C4AF4C1B7BB01409916 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		FF91A8177031095FBB442771 /* Build configuration list for PBXNativeTarget "ZeroFret" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				421915FEB7CFEC10A7E412A7 /* Debug */,
+				CDB9B01CAF383C6907C37855 /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+		7F16B0862EE7FB85E5F63A1F /* Build configuration list for PBXNativeTarget "ZeroFretTests" */ = {
+			isa = XCConfigurationList;
+			buildConfigurations = (
+				8B70AF19F4460F4C92BAAFAB /* Debug */,
+				7CB9A77F87C89F6B2D9C7A9E /* Release */,
+			);
+			defaultConfigurationIsVisible = 0;
+			defaultConfigurationName = Release;
+		};
+/* End XCConfigurationList section */
+
+	};
+	rootObject = 5479F2934B628A765ACCFA8F /* Project object */;
+}

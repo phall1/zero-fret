@@ -1,0 +1,10 @@
+//  Signing.example.xcconfig
+//
+//  Copy to Config/Signing.xcconfig (gitignored) and fill in your own values.
+//  Find your team ID at https://developer.apple.com/account under Membership.
+
+DEVELOPMENT_TEAM = ABCDE12345
+
+// Optional: use your own reverse-DNS prefix so the identifier is available on
+// your account. The default in the project is dev.phux.zerofret.
+// PRODUCT_BUNDLE_IDENTIFIER = com.example.zerofret

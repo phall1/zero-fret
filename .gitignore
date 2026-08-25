@@ -1,0 +1,33 @@
+# Xcode
+build/
+DerivedData/
+*.xcuserstate
+xcuserdata/
+*.xcworkspace/xcuserdata/
+*.moved-aside
+*.hmap
+*.ipa
+*.dSYM.zip
+*.dSYM
+
+# Signing / secrets — never commit
+*.mobileprovision
+*.p12
+*.cer
+*.certSigningRequest
+AuthKey_*.p8
+ExportOptions.local.plist
+.env
+.env.*
+secrets/
+
+# macOS
+.DS_Store
+
+# Scratch
+*.log
+build/DerivedData/
+*.xcarchive
+
+# Local signing identity — never tracked (see Config/Signing.example.xcconfig)
+Config/Signing.xcconfig

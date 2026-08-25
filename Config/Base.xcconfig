@@ -1,0 +1,13 @@
+//  Base.xcconfig
+//  Zero Fret — shared build settings for both targets.
+//
+//  Signing identity lives in a sibling file that is deliberately NOT tracked, so
+//  a public clone carries no account identifiers. Copy the example and fill in
+//  your own team:
+//
+//      cp Config/Signing.example.xcconfig Config/Signing.xcconfig
+//
+//  Without it the project still opens and builds for the Simulator; Xcode will
+//  ask you to pick a team the first time you build for a device.
+
+#include? "Signing.xcconfig"
