@@ -69,9 +69,35 @@ needed. Confirm with Xcode's Core Animation FPS gauge.
 
 ## TestFlight
 
-### 1. Create the app record — once, in App Store Connect
+### Already done once
 
-This is the only step that has no CLI and must be done in the browser.
+The App ID `dev.phux.zerofret` is registered, the App Store Connect record
+exists, and an `IOS_APP_STORE` provisioning profile named **Zero Fret App Store**
+is bound to the existing distribution certificate. None of that needs repeating —
+skip to "Archive, export, upload".
+
+### Two things that will waste an afternoon if you hit them cold
+
+**Homebrew `rsync` breaks IPA packaging.** Xcode's packaging step shells out to
+`rsync`, and Homebrew's 3.x rejects the flags it passes. What you see is a bare
+`error: exportArchive Copy failed`; the real message,
+`rsync error: syntax or usage error`, is inside a `.xcdistributionlogs` bundle
+under `$TMPDIR`. `Scripts/archive.sh` pins `/usr/bin` first on PATH to avoid it.
+
+**Cloud signing needs an Admin key.** `signingStyle=automatic` asks Apple to mint
+a distribution certificate on demand, and an App Manager key gets
+`Cloud signing permission error`. Since a distribution certificate already exists
+locally, the script exports with `signingStyle=manual` against a named profile
+instead — set `EXPORT_PROFILE` (already wired up).
+
+**The private key is only downloadable once.** If `AuthKey_*.p8` is ever lost,
+the key is dead — revoke it and generate a new one. There is no re-download.
+
+### Creating the app record from scratch (only for a new app)
+
+`POST /v1/apps` is not permitted by the API — `apps` allows only
+`GET_COLLECTION`, `GET_INSTANCE` and `UPDATE`. App creation must be done in the
+browser.
 
 **Apps → + → New App**
 
