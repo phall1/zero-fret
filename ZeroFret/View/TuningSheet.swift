@@ -31,6 +31,7 @@ struct TuningSheet: View {
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .background(Theme.stage)
+            .accessibilityIdentifier("tuningList")
             .navigationTitle("Tuning")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {
@@ -67,6 +68,7 @@ struct TuningSheet: View {
             }
             .contentShape(Rectangle())
         }
+        .accessibilityIdentifier("tuning.\(tuning.id)")
         .listRowBackground(Theme.stageRaised)
     }
 }

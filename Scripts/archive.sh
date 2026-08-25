@@ -88,6 +88,7 @@ rm -rf "$ARCHIVE" "$EXPORT_DIR"
 mkdir -p "$BUILD_DIR"
 
 echo "==> archiving"
+set +e
 xcodebuild archive \
   -project "$PROJECT" \
   -scheme "$SCHEME" \
@@ -96,7 +97,38 @@ xcodebuild archive \
   -archivePath "$ARCHIVE" \
   -allowProvisioningUpdates \
   "${AUTH[@]}" \
-  "${VERSION_FLAGS[@]}"
+  "${VERSION_FLAGS[@]}" 2>&1 | tee "$BUILD_DIR/archive.log"
+STATUS=${PIPESTATUS[0]}
+set -e
+
+if [[ $STATUS -ne 0 ]]; then
+  if grep -q "No Accounts" "$BUILD_DIR/archive.log"; then
+    cat >&2 <<'MSG'
+
+------------------------------------------------------------------------------
+Xcode has no Apple ID signed in, so it cannot register the App ID or create a
+provisioning profile. Fix it one of two ways, then re-run this script:
+
+  A. Xcode > Settings > Accounts > + > Apple ID, and sign in.
+
+  B. Create an App Store Connect API key with the App Manager role at
+     App Store Connect > Users and Access > Integrations > Keys, then:
+
+       mkdir -p ~/.appstoreconnect/private_keys
+       mv ~/Downloads/AuthKey_XXXXXXXXXX.p8 ~/.appstoreconnect/private_keys/
+       export ASC_KEY_ID=XXXXXXXXXX
+       export ASC_ISSUER_ID=xxxxxxxx-xxxx-xxxx-xxxx-xxxxxxxxxxxx
+       export ASC_KEY_PATH=~/.appstoreconnect/private_keys/AuthKey_XXXXXXXXXX.p8
+
+     Option B is the only one that works without a GUI, and the only one that
+     works in CI.
+
+Full log: build/archive.log
+------------------------------------------------------------------------------
+MSG
+  fi
+  exit $STATUS
+fi
 
 # Written at run time so the team ID never lands in a tracked file.
 PLIST="$BUILD_DIR/ExportOptions.plist"

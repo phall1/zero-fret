@@ -125,20 +125,32 @@ final class DetectionWorker {
     /// Route change or engine restart: the sample rate may have moved, so every
     /// derived constant is rebuilt. §2, lifecycle.
     func reconfigure(sampleRate: Double, windowSize: Int) {
+        // Keep the config in step, or the next `drain` sees `desired != windowSize`
+        // and immediately rebuilds everything a second time, throwing away the
+        // size that was just passed in.
+        config.withLock { $0.windowSize = windowSize }
         queue.async { [self] in
             self.sampleRate = sampleRate
-            self.windowSize = windowSize
-            self.hopSize = windowSize / 4
-            detector = PitchDetector(sampleRate: sampleRate, windowSize: windowSize)
-            filter = Biquad(sampleRate: sampleRate)
-            filter.reset()
-            smoother.reset()
-            filteredFilled = 0
-            gate.beginCalibration()
-            ring.clear()
-
+            rebuild(windowSize: windowSize)
             if running { restartTimer() }
         }
+    }
+
+    /// The single place that rebuilds every rate- and window-derived object.
+    /// Having two of these was how `reconfigureInline` came to skip
+    /// `gate.beginCalibration()` — leaving a noise floor measured against the old
+    /// window applied to hops from a window twice as long.
+    private func rebuild(windowSize size: Int) {
+        windowSize = size
+        hopSize = size / 4
+        detector = PitchDetector(sampleRate: sampleRate, windowSize: size)
+        filter = Biquad(sampleRate: sampleRate)
+        filter.reset()
+        smoother.reset()
+        filteredFilled = 0
+        unvoicedHops = 0
+        gate.beginCalibration()
+        ring.clear()
     }
 
     // MARK: - Detection queue
@@ -180,13 +192,7 @@ final class DetectionWorker {
     }
 
     private func reconfigureInline(windowSize size: Int) {
-        windowSize = size
-        hopSize = size / 4
-        detector = PitchDetector(sampleRate: sampleRate, windowSize: size)
-        filter.reset()
-        smoother.reset()
-        filteredFilled = 0
-        ring.clear()
+        rebuild(windowSize: size)
         restartTimer()
     }
 

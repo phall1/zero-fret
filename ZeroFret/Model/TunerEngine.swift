@@ -37,10 +37,17 @@ final class TunerEngine {
     /// Not specified. ±5¢ is the band every credible guitar tuner treats as in
     /// tune, and it is comfortably above this detector's resolution floor.
     nonisolated static let defaultToleranceCents = 5.0
+    /// The Settings diagnostics are a readout, not an instrument. 6 Hz is legible
+    /// and keeps the sheet from re-rendering under the user's finger.
+    static let signalRefreshInterval = 1.0 / 6.0
 
     // MARK: - Published state
 
     private(set) var display = DisplayState()
+    /// Diagnostics, republished at `signalRefreshInterval` rather than per frame.
+    private(set) var signal = SignalState()
+    /// Outside the observable graph on purpose — see `WobblePhase`.
+    let wobble = WobblePhase()
     private(set) var permission: MicrophoneAuthorization = .undetermined
     private(set) var engineError: String?
     private(set) var isRunning = false
@@ -50,19 +57,37 @@ final class TunerEngine {
 
     // MARK: - Settings
 
-    var referenceA: Double = Defaults.referenceA {
-        didSet {
-            referenceA = min(max(referenceA, 410), 470)
-            Defaults.referenceA = referenceA
-            tick.rearm()
+    // Clamping happens in the setter, NOT in a `didSet` that assigns back to the
+    // property. Under `@Observable` the macro splits the property, so the
+    // observer sits on the generated backing store while the self-assignment
+    // goes back through the public setter — which writes the store again and
+    // re-enters `didSet` forever. A plain class calls `didSet` once; the
+    // `@Observable` version recurses until the stack is gone. One touch of the
+    // Reference slider was enough to take the app down.
+    //
+    // Neither setter re-arms the haptic latch. `Slider` writes once per step
+    // during a drag, so re-arming there would fire a rigid impact on every step
+    // the note happened to be in band — precisely the machine-gunning §7's latch
+    // exists to prevent.
+    private var storedReferenceA: Double = Defaults.referenceA
+    var referenceA: Double {
+        get { storedReferenceA }
+        set {
+            let clamped = min(max(newValue, 410), 470)
+            guard clamped != storedReferenceA else { return }
+            storedReferenceA = clamped
+            Defaults.referenceA = clamped
         }
     }
 
-    var toleranceCents: Double = Defaults.toleranceCents {
-        didSet {
-            toleranceCents = min(max(toleranceCents, 1), 15)
-            Defaults.toleranceCents = toleranceCents
-            tick.rearm()
+    private var storedToleranceCents: Double = Defaults.toleranceCents
+    var toleranceCents: Double {
+        get { storedToleranceCents }
+        set {
+            let clamped = min(max(newValue, 1), 15)
+            guard clamped != storedToleranceCents else { return }
+            storedToleranceCents = clamped
+            Defaults.toleranceCents = clamped
         }
     }
 
@@ -87,6 +112,10 @@ final class TunerEngine {
             pinnedString = nil
             assigner.reset()
             tick.rearm()
+            // Drop the held reading. Without this the 250 ms hold keeps
+            // rendering the previous tuning's target — including a stringIndex
+            // that may not exist in the new tuning, so no chip matches.
+            clearHeldReading()
             worker?.setWindowSize(tuning.windowSize)
         }
     }
@@ -94,9 +123,13 @@ final class TunerEngine {
     /// Manual pin. §4: assignment is disabled entirely while a string is pinned.
     var pinnedString: Int? {
         didSet {
+            guard pinnedString != oldValue else { return }
             assigner.pinnedIndex = pinnedString
             assigner.reset()
             tick.rearm()
+            // Re-target the held reading straight away, so pinning a string
+            // takes visible effect even if the note has already decayed.
+            retargetHeldReading()
         }
     }
 
@@ -108,7 +141,11 @@ final class TunerEngine {
     private let tick = TrueTick()
 
     private let proxy = DisplayLinkProxy()
-    private var link: CADisplayLink?
+    // `nonisolated(unsafe)` so `deinit`, which is nonisolated, can invalidate it.
+    // Every other access is on the main actor, and by the time `deinit` runs no
+    // other reference to this object exists.
+    @ObservationIgnored private nonisolated(unsafe) var link: CADisplayLink?
+    private var lastSignalPublish: Double = 0
 
     private var lastSequence: Int64 = -1
     private var lastValidTime: Double = 0
@@ -119,6 +156,13 @@ final class TunerEngine {
     private var heldFrequency: Double = 0
     private var heldClarity: Double = 0
     private var heldTarget: PitchTarget = .chromatic(midi: 69)
+
+    deinit {
+        // CADisplayLink is retained by the run loop and retains its target, so a
+        // released engine would otherwise leave a link firing at 120 Hz for the
+        // rest of the process. `invalidate()` is the one thing safe to call here.
+        link?.invalidate()
+    }
 
     init() {
         permission = audio.authorization
@@ -154,7 +198,16 @@ final class TunerEngine {
     }
 
     func enterForeground() {
+        // Re-read rather than trusting the cached value: the app's own "Open
+        // Settings" button sends the user to the one screen that changes it.
+        permission = audio.authorization
         guard permission == .granted else { return }
+
+        // `.active` also fires for Control Center, a notification banner and the
+        // app switcher, none of which were preceded by `.background`. Restarting
+        // there would rebuild the detector, re-prime the smoother and re-run the
+        // 1 s gate calibration while a note is ringing.
+        guard !isRunning else { return }
         startEverything()
     }
 
@@ -174,17 +227,23 @@ final class TunerEngine {
         worker?.responseMode = responseMode
         worker?.setWindowSize(tuning.windowSize)
 
+        assigner.reset()
+        tick.rearm()
+        clearHeldReading()
+
+        // The worker's snapshot buffer outlives a stop, so it still holds the
+        // last reading from before the app was backgrounded. Adopting it would
+        // flash a note nobody is playing — and fire a real haptic tick if that
+        // stale reading happened to be in tune. Start from wherever the buffer
+        // is now, not from -1.
+        lastSequence = worker?.snapshots.latest()?.sequence ?? -1
+
+        // `audio.start()` drives `onSampleRateChange` and `onRunningChange`,
+        // which reconfigure and start the worker in that order on its own serial
+        // queue. Doing it again here would only race those callbacks.
         audio.start()
         engineError = audio.lastError
 
-        if audio.isRunning {
-            worker?.reconfigure(sampleRate: audio.sampleRate, windowSize: tuning.windowSize)
-            worker?.start()
-        }
-
-        assigner.reset()
-        tick.rearm()
-        lastSequence = -1
         startLink()
     }
 
@@ -193,6 +252,8 @@ final class TunerEngine {
         worker?.stop()
         audio.stop()
         display = DisplayState()
+        signal = SignalState()
+        clearHeldReading()
         releaseIdleTimer()
     }
 
@@ -222,10 +283,18 @@ final class TunerEngine {
         var next = display
 
         if let snapshot = worker?.snapshots.latest() {
-            next.rmsDB = snapshot.rmsDB
-            next.gateDB = snapshot.gateDB
-            next.sampleRate = snapshot.sampleRate
-            next.windowSize = snapshot.windowSize
+            // Diagnostics move on every hop even in silence, so they are
+            // republished on their own slow clock rather than dragging the
+            // Settings list along at 47 Hz.
+            if now - lastSignalPublish >= TunerEngine.signalRefreshInterval {
+                lastSignalPublish = now
+                let updated = SignalState(rmsDB: snapshot.rmsDB,
+                                          gateDB: snapshot.gateDB,
+                                          sampleRate: snapshot.sampleRate,
+                                          windowSize: snapshot.windowSize,
+                                          clarity: snapshot.clarity)
+                if updated != signal { signal = updated }
+            }
 
             if snapshot.sequence != lastSequence {
                 lastSequence = snapshot.sequence
@@ -241,7 +310,6 @@ final class TunerEngine {
 
             next.hasPitch = true
             next.frequency = heldFrequency
-            next.clarity = heldClarity
             next.cents = cents
             next.beatHz = min(beat, TunerEngine.maxDisplayBeatHz)
             next.targetMIDI = heldTarget.midi
@@ -255,7 +323,6 @@ final class TunerEngine {
             next.frequency = 0
             next.cents = 0
             next.beatHz = 0
-            next.clarity = 0
             next.stringIndex = nil
             next.isChromaticFallback = false
             next.direction = .inTune
@@ -263,10 +330,10 @@ final class TunerEngine {
         }
 
         // §0.3 / §6: integrate, never evaluate from absolute time.
-        var phase = display.phase + 2 * .pi * next.beatHz * dt
-        if phase >= 2 * .pi { phase = phase.truncatingRemainder(dividingBy: 2 * .pi) }
-        next.phase = phase
+        wobble.advance(beatHz: next.beatHz, dt: dt)
 
+        // Only on a real change. `display` no longer carries anything that moves
+        // every frame, so in silence this assigns nothing at all.
         if next != display { display = next }
 
         updateIdleTimer(now: now, pitchPresent: next.hasPitch)
@@ -310,6 +377,24 @@ final class TunerEngine {
         }
     }
 
+    /// Forget the last reading outright, so the 250 ms hold cannot render it.
+    private func clearHeldReading() {
+        heldFrequency = 0
+        heldClarity = 0
+        heldTarget = .chromatic(midi: 69)
+        lastValidTime = 0
+        wobble.reset()
+    }
+
+    /// Re-run assignment against the current tuning without waiting for the next
+    /// detection frame.
+    private func retargetHeldReading() {
+        guard heldFrequency > 0 else { return }
+        heldTarget = assigner.target(frequency: heldFrequency,
+                                     tuning: tuning,
+                                     referenceA: referenceA)
+    }
+
     private func releaseIdleTimer() {
         idleTimerHeld = false
         UIApplication.shared.isIdleTimerDisabled = false
@@ -323,6 +408,8 @@ final class TunerEngine {
 
     /// Cents from the currently detected pitch to a given string, for the row
     /// display. Nil when there is no pitch.
+    var clarity: Double { signal.clarity }
+
     func cents(to string: TuningString) -> Double? {
         guard display.hasPitch, display.frequency > 0 else { return nil }
         return MusicMath.cents(measured: display.frequency,

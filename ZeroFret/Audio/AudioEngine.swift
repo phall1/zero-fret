@@ -65,6 +65,15 @@ final class AudioEngine {
         for observer in observers {
             NotificationCenter.default.removeObserver(observer)
         }
+        // The tap closure holds raw pointers into `ring`'s heap allocations by
+        // value. Stored-property release order is unspecified, so if `ring` were
+        // deallocated while the input node still held the tap, a render callback
+        // already in flight would memcpy into freed memory. Drop the tap first.
+        if tapInstalled {
+            engine.inputNode.removeTap(onBus: 0)
+            tapInstalled = false
+        }
+        if engine.isRunning { engine.stop() }
     }
 
     // MARK: - Permission
@@ -98,7 +107,6 @@ final class AudioEngine {
 
         #if targetEnvironment(simulator)
         sampleRate = 48000
-        ring.clear()
         synthetic.start()
         lastError = nil
         setRunning(true)
@@ -172,12 +180,7 @@ final class AudioEngine {
             throw AudioEngineError.invalidInputFormat
         }
 
-        let changed = abs(format.sampleRate - sampleRate) > 0.5
-        sampleRate = format.sampleRate
-
-        ring.clear()
-
-        // Captured by value: `writer` is five words of plain pointers, so the
+        // Captured by value: `writer` is four words of plain pointers, so the
         // render thread never touches a class reference.
         let writer = ring.writer
         engine.inputNode.installTap(onBus: 0, bufferSize: 1024, format: format) { buffer, _ in
@@ -189,11 +192,24 @@ final class AudioEngine {
 
         engine.prepare()
         try engine.start()
-        setRunning(true)
 
-        if changed {
-            onSampleRateChange?(sampleRate)
-        }
+        // Commit the rate only now. Assigning it before `start()` meant a throw
+        // here latched a rate nobody had been told about, and every later
+        // restart then saw "unchanged" and never notified — leaving the detector
+        // deriving every constant from a sample rate the hardware stopped using.
+        sampleRate = format.sampleRate
+
+        // Unconditional, and before `setRunning`. `reconfigure` is idempotent, so
+        // there is nothing to gain from guessing whether the rate moved, and the
+        // worker must be reconfigured before it is told to start or its first
+        // hop is analysed against the previous rate.
+        //
+        // Note there is no `ring.clear()` here: `readIndex` belongs to the
+        // detection queue and writing it from the main actor is a data race
+        // against `advance()`. The worker clears the ring from its own queue in
+        // `start()` and `reconfigure()`.
+        onSampleRateChange?(sampleRate)
+        setRunning(true)
     }
 
     private func teardownTap() {
@@ -271,11 +287,14 @@ final class AudioEngine {
             teardown()
             setRunning(false)
         case .ended:
-            let optionsRaw = note.userInfo?[AVAudioSessionInterruptionOptionKey] as? UInt ?? 0
-            let options = AVAudioSession.InterruptionOptions(rawValue: optionsRaw)
-            if options.contains(.shouldResume) {
-                restart()
-            }
+            // §2 says "on .ended with .shouldResume". In practice .shouldResume
+            // is frequently absent — Siri, a call that ended while another app
+            // still held the session, several system alerts — and honouring the
+            // flag literally leaves the engine down while the display link keeps
+            // running, so the app renders a frozen readout with no error. The
+            // intent flag we actually care about is `wantsRunning`, which
+            // `restart()` already checks, so restart either way.
+            restart()
         @unknown default:
             break
         }
@@ -286,11 +305,20 @@ final class AudioEngine {
               let reason = AVAudioSession.RouteChangeReason(rawValue: raw) else { return }
 
         switch reason {
-        case .oldDeviceUnavailable, .newDeviceAvailable, .override, .categoryChange,
-             .routeConfigurationChange:
-            // Tear down the tap, re-read the format — the sample rate may have
-            // moved — reinstall, restart. Acceptance test 5 is this path.
+        case .oldDeviceUnavailable, .newDeviceAvailable:
+            // The two §2 names. Tear down the tap, re-read the format — the
+            // sample rate may have moved — reinstall, restart. Acceptance test 5
+            // is this path.
             restart()
+
+        case .override, .categoryChange, .routeConfigurationChange:
+            // These fire for changes we caused. `configureSession()` itself
+            // posts .categoryChange on cold start, and restarting on it meant
+            // every launch did a second teardown and a second 1 s gate
+            // calibration — working directly against the <400 ms first-reading
+            // target. Only rebuild if the hardware rate actually moved.
+            if abs(session.sampleRate - sampleRate) > 0.5 { restart() }
+
         default:
             break
         }

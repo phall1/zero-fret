@@ -19,11 +19,21 @@ echo "==> devices"
 xcrun devicectl list devices
 
 if [[ -z "$TARGET" ]]; then
+  # Match the State column exactly. A substring match would happily accept
+  # "unavailable", which contains "available".
   TARGET=$(xcrun devicectl list devices 2>/dev/null \
-    | awk '/available|connected/ {print $3; exit}')
+    | awk '$4 == "connected" || $4 == "available" { print $3; exit }')
 fi
 [[ -n "$TARGET" ]] || {
-  echo "error: no connected device. Plug the iPhone in, unlock it, and trust this Mac." >&2
+  cat >&2 <<'MSG'
+error: no reachable device.
+
+  - Plug the iPhone in over USB
+  - Unlock it and tap Trust This Computer
+  - Settings > Privacy & Security > Developer Mode must be on
+
+A device listed as "unavailable" is registered but not currently reachable.
+MSG
   exit 1
 }
 echo "==> target $TARGET"

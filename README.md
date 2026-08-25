@@ -21,7 +21,7 @@ comes from.
 | Language | Swift 5, SwiftUI |
 | Dependencies | none — Accelerate, AVFoundation, UIKit, SwiftUI |
 | Project | plain Xcode project, no SPM packages, no workspace |
-| Tests | 50 host tests over the DSP and model layers, no microphone required |
+| Tests | Host tests over the DSP and model layers, plus UI tests for the stage, thumb zone, sheets and landscape |
 
 ## Build
 
@@ -31,11 +31,16 @@ xcodebuild build -scheme ZeroFret -destination 'generic/platform=iOS'
 xcodebuild test  -scheme ZeroFret -destination 'platform=iOS Simulator,name=iPhone 17'
 ```
 
-The tuner itself is useless in the Simulator — its microphone resamples and
-applies processing you cannot disable, and it produces plausible-looking wrong
-answers. The test bundle deliberately has **no host app** so it runs there
-anyway: it compiles the pure DSP and model layer and drives it with synthesised
-signals.
+The tuner is useless against the Simulator's microphone — it resamples and
+applies processing you cannot disable, and produces plausible-looking wrong
+answers. Two things follow from that:
+
+- The **unit test bundle has no host app**. It compiles the pure DSP and model
+  layer and drives it with synthesised signals, so it runs anywhere.
+- The **app feeds itself a generated signal in the Simulator** and labels the
+  readout `DEMO`. Everything downstream of the ring buffer is the real code path
+  on real data structures, which is what makes the UI tests meaningful. On device
+  that file compiles to nothing.
 
 ## How it works
 
@@ -71,6 +76,18 @@ averages it in, a median deletes it.
 from absolute time. The beat frequency changes every frame while somebody is
 tuning, and `sin(2π · beat · t)` snaps every time it does — a bug that reads as a
 noisy detector when the detector is fine.
+
+## Running it on a phone
+
+```sh
+Scripts/device.sh          # build, install and launch on a connected iPhone
+Scripts/archive.sh         # archive + export a signed .ipa
+Scripts/archive.sh --upload  # ...and send it to TestFlight
+```
+
+Signing needs your own Apple credentials; see [docs/SHIPPING.md](docs/SHIPPING.md).
+Nothing account-identifying is tracked — `Config/Signing.xcconfig` is gitignored
+and `Config/Signing.example.xcconfig` shows what goes in it.
 
 ## Layout
 

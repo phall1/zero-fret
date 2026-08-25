@@ -23,18 +23,25 @@ struct StringCanvas: View {
     private static let fullScaleCents: Double = 45
 
     let cents: Double
-    let phase: Double
+    /// Read at draw time rather than passed as a value: phase moves every frame
+    /// and putting it in the observable state would invalidate the whole view
+    /// tree at 120 Hz. `TimelineView(.animation)` is already redrawing at display
+    /// rate, so reading it here costs nothing.
+    let wobble: WobblePhase
     let hasPitch: Bool
     let inTune: Bool
     let color: Color
 
     var body: some View {
-        TimelineView(.animation) { _ in
+        TimelineView(.animation) { timeline in
             Canvas { context, size in
+                // Referenced so the draw closure cannot be elided: everything
+                // else it reads is unchanged between frames.
+                _ = timeline.date
                 let midY = size.height / 2
                 let amplitude = Self.maxAmplitude
                     * CGFloat(min(abs(cents) / Self.fullScaleCents, 1))
-                let swing = CGFloat(sin(phase))
+                let swing = CGFloat(sin(wobble.value))
 
                 var path = Path()
                 for index in 0..<Self.samples {

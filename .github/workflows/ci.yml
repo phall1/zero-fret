@@ -15,16 +15,29 @@ jobs:
       - name: Show toolchain
         run: xcodebuild -version
 
-      # No signing: the test bundle has no host app and the Simulator build
-      # does not need an identity. Config/Signing.xcconfig is intentionally
-      # absent from the repo, and Base.xcconfig includes it optionally.
-      - name: Test
+      # Runner images change which simulators they ship, so pick one at run time
+      # rather than pinning a name that quietly disappears.
+      - name: Pick a simulator
+        id: sim
+        run: |
+          NAME=$(xcrun simctl list devices available --json \
+            | python3 -c "import json,sys; d=json.load(sys.stdin)['devices']; \
+              print(next(x['name'] for r in sorted(d, reverse=True) for x in d[r] if 'iPhone' in x['name']))")
+          echo "name=$NAME" >> "$GITHUB_OUTPUT"
+          echo "using $NAME"
+
+      # Unit tests only. The bundle has no host app, so it needs no signing —
+      # Config/Signing.xcconfig is deliberately absent from the repo and
+      # Base.xcconfig includes it optionally. The UI tests drive the Simulator
+      # and are run locally rather than here.
+      - name: Unit tests
         run: |
           set -o pipefail
           xcodebuild test \
             -project ZeroFret.xcodeproj \
             -scheme ZeroFret \
-            -destination 'platform=iOS Simulator,name=iPhone 16' \
+            -only-testing:ZeroFretTests \
+            -destination "platform=iOS Simulator,name=${{ steps.sim.outputs.name }}" \
             CODE_SIGNING_ALLOWED=NO
 
       - name: Build for device (unsigned)

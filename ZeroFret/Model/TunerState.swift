@@ -58,10 +58,21 @@ final class SnapshotBuffer {
     }
 
     /// Reader side. Display link only.
+    ///
+    /// The copy is ~70 bytes and non-atomic, so the counter is re-read
+    /// afterwards: if the writer published while we were copying, the struct may
+    /// be torn and is discarded. Publishes are not evenly spaced — after a queue
+    /// stall `DetectionWorker.drain` emits a burst back to back — so "the writer
+    /// cannot lap us in 64 ms" is not an argument you can lean on. A retry is
+    /// two atomic loads and removes the question entirely.
     func latest() -> DetectionSnapshot? {
-        let index = zf_atomic_load_i64(published)
-        guard index >= 0 else { return nil }
-        return slots[Int(index % 3)]
+        for _ in 0..<4 {
+            let before = zf_atomic_load_i64(published)
+            guard before >= 0 else { return nil }
+            let value = slots[Int(before % 3)]
+            if zf_atomic_load_i64(published) == before { return value }
+        }
+        return nil
     }
 }
 
@@ -72,34 +83,65 @@ enum TuneDirection {
     case inTune
 }
 
-/// Everything the view layer reads, updated once per display-link frame so that
-/// a frame produces exactly one SwiftUI invalidation.
+/// The wobble phase, deliberately kept out of the observable graph.
+///
+/// Phase advances on every display frame. Storing it in `DisplayState` would
+/// invalidate the entire view tree at 120 Hz, when in fact the note, the cents
+/// and the colour only change when a new detection frame lands — ~47×/s at hop
+/// 1024, which is what §6 describes. `StringCanvas` reads this from inside
+/// `TimelineView(.animation)`, which is already redrawing at display rate.
+@MainActor
+final class WobblePhase {
+    private(set) var value: Double = 0
+
+    /// §0.3: integrate. Never evaluate from absolute time — the beat frequency
+    /// moves every frame while somebody is tuning, and recomputing makes the
+    /// string snap each time it does.
+    func advance(beatHz: Double, dt: Double) {
+        value += 2 * .pi * beatHz * dt
+        if value >= 2 * .pi {
+            value = value.truncatingRemainder(dividingBy: 2 * .pi)
+        }
+    }
+
+    func reset() { value = 0 }
+}
+
+/// Diagnostics for the Settings sheet. Separate from `DisplayState` because
+/// `rmsDB` changes on every hop even in dead silence, and a shared struct would
+/// re-render the whole Settings list — sliders and pickers included — at 47 Hz
+/// underneath the user's finger.
+struct SignalState: Equatable {
+    var rmsDB = -120.0
+    var gateDB = -50.0
+    var sampleRate = 48000.0
+    var windowSize = 4096
+    var clarity = 0.0
+}
+
+/// Everything the stage reads. Replaced only when a value actually changed, so a
+/// frame produces at most one SwiftUI invalidation.
 struct DisplayState: Equatable {
     var hasPitch = false
     var frequency = 0.0
     var cents = 0.0
-    var clarity = 0.0
     /// Already clamped for display (§6: 24 Hz ceiling).
     var beatHz = 0.0
-    /// Accumulated, never recomputed from absolute time. §0.3.
-    var phase = 0.0
     var targetMIDI = 69
     var noteName = "—"
     var octave = 4
     var stringIndex: Int?
     var isChromaticFallback = false
     var direction: TuneDirection = .inTune
-    var rmsDB = -120.0
-    var gateDB = -50.0
-    var sampleRate = 48000.0
-    var windowSize = 4096
 
     var noteLabel: String { hasPitch ? "\(noteName)\(octave)" : "—" }
 
     /// `−00.0¢` shaped, always signed, always one decimal. Fixed width plus
     /// `.monospacedDigit()` is what stops the block shimmering at 47 updates/s.
     var centsText: String {
-        guard hasPitch else { return "––.–" }
+        // Same glyph count blanked as lit, so the block does not resize when the
+        // note stops.
+        guard hasPitch else { return "–––.–" }
         let magnitude = min(abs(cents), 99.9)
         let sign = cents < 0 ? "−" : "+"
         return String(format: "%@%04.1f", sign, magnitude)

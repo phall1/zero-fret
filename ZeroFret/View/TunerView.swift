@@ -73,6 +73,7 @@ struct TunerView: View {
                 }
                 .foregroundStyle(Theme.trueTone.opacity(0.85))
             }
+            .accessibilityIdentifier("tuningButton")
             .accessibilityLabel("Tuning: \(engine.tuning.name). Change tuning.")
 
             if engine.isDemoSignal {
@@ -99,6 +100,7 @@ struct TunerView: View {
                     .frame(width: 40, height: 36)
                     .contentShape(Rectangle())
             }
+            .accessibilityIdentifier("settingsButton")
             .accessibilityLabel("Settings")
         }
         .padding(.horizontal, 20)
@@ -164,6 +166,7 @@ struct TunerView: View {
                 .opacity(engine.display.hasPitch ? 1 : 0.35)
         }
         .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("noteGlyph")
         .accessibilityLabel(accessibilitySummary)
     }
 
@@ -182,7 +185,7 @@ struct TunerView: View {
 
     private var string: some View {
         StringCanvas(cents: engine.display.cents,
-                     phase: engine.display.phase,
+                     wobble: engine.wobble,
                      hasPitch: engine.display.hasPitch,
                      inTune: engine.display.direction == .inTune,
                      color: accent)
@@ -195,6 +198,7 @@ struct TunerView: View {
             Text(engine.display.centsText)
                 .font(.system(size: isLandscape ? 34 : 44, weight: .light, design: .rounded)
                     .monospacedDigit())
+                .frame(width: isLandscape ? 116 : 150, alignment: .trailing)
             Text("¢")
                 .font(.system(size: isLandscape ? 20 : 24, weight: .light, design: .rounded))
                 .foregroundStyle(accent.opacity(0.5))
@@ -225,6 +229,7 @@ struct TunerView: View {
                 Text("Pinned to \(engine.tuning.strings[pinned].label) — tap again to release")
                     .font(.system(size: 11, weight: .medium, design: .rounded))
                     .foregroundStyle(Theme.muted)
+                    .accessibilityIdentifier("pinBanner")
             }
 
             HStack(spacing: 6) {
@@ -340,6 +345,11 @@ private struct StringChip: View {
         }
         .contentShape(RoundedRectangle(cornerRadius: 12, style: .continuous))
         .animation(.easeOut(duration: 0.15), value: isActive)
+        // Combine first. Without this the note name and the octave each become
+        // their own accessibility element, so VoiceOver reads "E" then "2" as two
+        // separate buttons and the chip is impossible to address as one control.
+        .accessibilityElement(children: .combine)
+        .accessibilityIdentifier("string.\(string.index)")
         .accessibilityLabel("\(string.label) string\(isPinned ? ", pinned" : "")")
         .accessibilityAddTraits(.isButton)
     }

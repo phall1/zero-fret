@@ -24,6 +24,7 @@ struct SettingsView: View {
                     }
                     Slider(value: $engine.referenceA, in: 410...470, step: 0.5)
                         .tint(Theme.trueTone)
+                        .accessibilityIdentifier("referenceSlider")
                     ScrollView(.horizontal, showsIndicators: false) {
                         HStack(spacing: 8) {
                             ForEach(Self.referencePresets, id: \.self) { value in
@@ -44,6 +45,7 @@ struct SettingsView: View {
                                                          ? Theme.trueTone : Theme.muted)
                                 }
                                 .buttonStyle(.plain)
+                                .accessibilityIdentifier("reference.\(Int(value))")
                             }
                         }
                         .padding(.vertical, 2)
@@ -91,15 +93,15 @@ struct SettingsView: View {
 
                 Section {
                     LabeledContent("Input level",
-                                   value: String(format: "%.0f dB", max(engine.display.rmsDB, -99)))
+                                   value: String(format: "%.0f dB", max(engine.signal.rmsDB, -99)))
                     LabeledContent("Noise gate (auto)",
-                                   value: String(format: "%.0f dB", engine.display.gateDB))
+                                   value: String(format: "%.0f dB", engine.signal.gateDB))
                     LabeledContent("Sample rate",
-                                   value: String(format: "%.0f Hz", engine.display.sampleRate))
+                                   value: String(format: "%.0f Hz", engine.signal.sampleRate))
                     LabeledContent("Analysis window",
-                                   value: "\(engine.display.windowSize) samples")
+                                   value: "\(engine.signal.windowSize) samples")
                     LabeledContent("Clarity",
-                                   value: String(format: "%.2f", engine.display.clarity))
+                                   value: String(format: "%.2f", engine.signal.clarity))
                 } header: {
                     Text("Signal")
                 } footer: {
@@ -121,6 +123,7 @@ struct SettingsView: View {
             .listStyle(.insetGrouped)
             .scrollContentBackground(.hidden)
             .background(Theme.stage)
+            .accessibilityIdentifier("settingsList")
             .navigationTitle("Settings")
             .navigationBarTitleDisplayMode(.inline)
             .toolbar {

@@ -39,6 +39,17 @@ has ProMotion, which criteria 8 and the 120 Hz path need.
 | 10 | Silence for 10 s: display blanks, idle timer re-enabled | Watch the readout blank after 250 ms of hold, then leave it. Sleep re-enables 45 s later. | ☐ |
 | 11 | Instruments, 5 min continuous: no allocation growth, no priority inversions on the audio thread | Allocations + Time Profiler. The tap does one `memcpy` and one atomic store; anything else showing up there is a regression. | ☐ |
 
+## UI coverage
+
+`ZeroFretUITests` drives the Simulator against the synthetic input source and
+covers what the host bundle structurally cannot: that the stage produces a
+reading at all, that tapping a string chip pins and releases it, that the tuning
+sheet and Settings round-trip, and that nothing escapes the window in landscape.
+
+It is not a substitute for any of the device tests above — the input is
+generated, so it says nothing about the microphone, the audio session, or the
+detector's behaviour on a real string.
+
 ## What the host suite deliberately does not prove
 
 - **Microphone frequency response.** Everything upstream of `AVAudioEngine` is

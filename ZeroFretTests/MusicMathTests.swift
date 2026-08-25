@@ -71,9 +71,28 @@ final class MusicMathTests: XCTestCase {
     func testCentsTextIsFixedWidth() {
         var state = DisplayState()
         state.hasPitch = true
-        for cents in stride(from: -60.0, through: 60.0, by: 0.7) {
+        // §6: the field is sized to −00.0¢ and updates ~47x/s. Any width change
+        // makes the whole block shimmer.
+        for cents in stride(from: -120.0, through: 120.0, by: 0.7) {
             state.cents = cents
             XCTAssertEqual(state.centsText.count, 5, "\(cents) -> \(state.centsText)")
         }
+        state.cents = 0
+        XCTAssertEqual(state.centsText, "+00.0")
+        state.cents = -0.04
+        XCTAssertEqual(state.centsText, "−00.0")
+        // 12.35 is not exactly representable, so %.1f gives 12.3. Pick a value
+        // off the rounding boundary rather than encoding a float artefact.
+        state.cents = -12.36
+        XCTAssertEqual(state.centsText, "−12.4")
+        state.cents = 99.94
+        XCTAssertEqual(state.centsText, "+99.9", "must clamp rather than widen")
+        state.cents = -450.0
+        XCTAssertEqual(state.centsText, "−99.9")
+        state.cents = 7.0
+        XCTAssertEqual(state.centsText, "+07.0")
+        // Blank state keeps the same glyph count.
+        state.hasPitch = false
+        XCTAssertEqual(state.centsText.count, 5)
     }
 }
