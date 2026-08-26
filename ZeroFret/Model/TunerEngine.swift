@@ -160,6 +160,10 @@ final class TunerEngine {
     private var heldFrequency: Double = 0
     private var heldClarity: Double = 0
     private var heldTarget: PitchTarget = .chromatic(midi: 69)
+    /// True when the last accepted frame was the detector coasting rather than
+    /// measuring. Kept out of `heldFrequency`'s story: the reading is the same,
+    /// only our confidence in it differs.
+    private var heldIsCoasting = false
 
     deinit {
         // CADisplayLink is retained by the run loop and retains its target, so a
@@ -324,6 +328,7 @@ final class TunerEngine {
             next.stringIndex = heldTarget.stringIndex
             next.isChromaticFallback = heldTarget.stringIndex == nil
             next.direction = TuneDirection.from(cents: cents, tolerance: toleranceCents)
+            next.isHeld = heldIsCoasting
         } else {
             next.hasPitch = false
             next.frequency = 0
@@ -333,6 +338,7 @@ final class TunerEngine {
             next.isChromaticFallback = false
             next.direction = .inTune
             next.noteName = "—"
+            next.isHeld = false
         }
 
         // §0.3 / §6: integrate, never evaluate from absolute time.
@@ -350,6 +356,7 @@ final class TunerEngine {
 
         heldFrequency = snapshot.frequency
         heldClarity = snapshot.clarity
+        heldIsCoasting = snapshot.isHeld
 
         let previousTarget = heldTarget
         heldTarget = assigner.target(frequency: snapshot.frequency,
@@ -365,6 +372,10 @@ final class TunerEngine {
         lastValidTime = now
         lastPitchTime = now
 
+        // A coasted frame must not drive the haptic. §7's tick means "you have
+        // arrived", and arriving on a reading we are only repeating would fire
+        // it for a note that has already stopped.
+        guard !snapshot.isHeld else { return }
         let targetHz = MusicMath.frequency(midi: Double(heldTarget.midi), referenceA: referenceA)
         tick.update(cents: MusicMath.cents(measured: heldFrequency, target: targetHz),
                     tolerance: toleranceCents)
@@ -390,6 +401,7 @@ final class TunerEngine {
         heldFrequency = 0
         heldClarity = 0
         heldTarget = .chromatic(midi: 69)
+        heldIsCoasting = false
         lastValidTime = 0
         wobble.reset()
     }

@@ -27,7 +27,7 @@ final class DetectionWorker {
     private var filter: Biquad
     private var smoother: Smoother
     private let gate = NoiseGate()
-    private var stability = PitchStability()
+    private var tracker = TargetTracker()
     private var window: UnsafeMutablePointer<Float>
     private var windowCapacity: Int
     private var hopScratch: UnsafeMutablePointer<Float>
@@ -101,7 +101,7 @@ final class DetectionWorker {
             running = true
             gate.beginCalibration()
             smoother.reset()
-            stability.reset()
+            tracker.reset()
             filter.reset()
             filteredFilled = 0
             unvoicedHops = 0
@@ -159,6 +159,7 @@ final class DetectionWorker {
         filter = Biquad(sampleRate: sampleRate)
         filter.reset()
         smoother.reset()
+        tracker.reset()
         filteredFilled = 0
         unvoicedHops = 0
         gate.beginCalibration()
@@ -209,35 +210,37 @@ final class DetectionWorker {
     }
 
     private func analyse() {
-        let result = detector.process(filteredHistory)
         let hopSeconds = Double(hopSize) / sampleRate
-
-        // Score the tuning's targets against the spectrum the detector just
-        // computed. This is the "detection, not estimation" half: rather than
-        // estimating a frequency and then asking which string it is near, ask
-        // directly how well each string explains what arrived.
         let (targets, referenceA) = config.withLock { ($0.targets, $0.referenceA) }
+        let tuning = Tuning(id: "active", name: "", family: .guitar, midiNotes: targets)
+
+        // The order matters, and it is the change that made a quiet instrument
+        // work. Transform first, then let the spectrum say *what* is playing,
+        // and only then ask the NSDF exactly *where* it is — searching a narrow
+        // bracket around that answer instead of the whole 25–1300 Hz range.
+        //
+        // Asked openly, the lag search returns subharmonics as soon as noise
+        // approaches the signal: traced on a low E six decibels into room tone,
+        // it gave 41, 27 and 119 Hz against a true 82, while the scorer named
+        // E2 on nearly every one of those frames. Neither half is reliable on
+        // its own here; each is reliable at the question it is being asked.
+        detector.analyse(filteredHistory)
+
         let scorer = HarmonicScorer(detector: detector)
-        let scored = scorer.detect(in: Tuning(id: "active", name: "", family: .guitar,
-                                              midiNotes: targets),
-                                   referenceA: referenceA)
+        let scored = scorer.detect(in: tuning, referenceA: referenceA)
         let contrast = scored?.contrast ?? 0
 
-        // Multiplicative, never a single threshold — Tartini's rule. Clarity
-        // passes on background speech; stability rejects most of it, and contrast
-        // rejects broadband noise almost entirely. Neither alone is enough.
-        //
-        // Level is deliberately absent. It rejected an unplugged electric outright
-        // while adding nothing these three do not already do better, and it did so
-        // level-independently. See the note in NoiseGate.
-        let standsOut = contrast >= HarmonicScorer.minimumContrast
-        let steady = stability.admit(frequency: result.frequency,
-                                     voiced: result.hasPitch && standsOut)
+        let result = tracker.read(from: detector, proposedBy: scored)
+
+        let outcome = tracker.update(pitch: result, detection: scored) { index in
+            guard index >= 0 && index < targets.count else { return 0 }
+            return MusicMath.frequency(midi: Double(targets[index]), referenceA: referenceA)
+        }
 
         // The floor still tracks the room, for the Settings readout and for §5's
         // recalibration behaviour — fed by frames where no instrument is sounding,
         // which is what "the room" actually means.
-        gate.update(rms: result.rms, dt: hopSeconds, instrumentPresent: standsOut)
+        gate.update(rms: result.rms, dt: hopSeconds, instrumentPresent: tracker.isTracking)
 
         var snapshot = DetectionSnapshot()
         snapshot.timestamp = CACurrentMediaTime()
@@ -246,13 +249,19 @@ final class DetectionWorker {
         snapshot.sampleRate = sampleRate
         snapshot.windowSize = windowSize
         snapshot.contrast = contrast
-        snapshot.harmonicString = scored?.stringIndex ?? -1
+        snapshot.harmonicString = outcome.string ?? scored?.stringIndex ?? -1
+        snapshot.clarity = result.clarity
 
-        if steady {
-            let smoothed = smoother.process(hz: result.frequency, dt: hopSeconds)
-            snapshot.frequency = smoothed
-            snapshot.clarity = result.clarity
+        if outcome.voiced {
+            // A coasted frame must not run through the smoother: feeding the
+            // one-euro filter the same value repeatedly makes it decide the
+            // signal has gone perfectly still and drop its cutoff, so the first
+            // real frame after the gap would arrive visibly late.
+            snapshot.frequency = outcome.isHeld
+                ? outcome.frequency
+                : smoother.process(hz: outcome.frequency, dt: hopSeconds)
             snapshot.hasPitch = true
+            snapshot.isHeld = outcome.isHeld
             unvoicedHops = 0
         } else {
             // Don't tear down the smoother on a single clarity dip mid-note —
@@ -261,10 +270,8 @@ final class DetectionWorker {
             unvoicedHops += 1
             if Double(unvoicedHops) * hopSeconds >= 0.25 { smoother.reset() }
             snapshot.frequency = 0
-            snapshot.clarity = result.clarity
             snapshot.hasPitch = false
         }
-
         snapshots.publish(snapshot)
     }
 }

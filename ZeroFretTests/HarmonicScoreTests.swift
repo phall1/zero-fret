@@ -94,8 +94,8 @@ final class HarmonicScoreTests: XCTestCase {
         guard let d = detect(note(40, partials: [1.0, 0.75, 0.55, 0.40, 0.25])) else {
             return XCTFail("no detection")
         }
-        XCTAssertGreaterThan(d.contrast, HarmonicScorer.minimumContrast,
-                             "a plucked string should clear the contrast bar")
+        XCTAssertGreaterThan(d.contrast, TargetTracker.acquireContrast,
+                             "a plucked string should clear the bar to acquire")
     }
 
     func testBroadbandNoiseDoesNotStandOut() {
@@ -104,8 +104,8 @@ final class HarmonicScoreTests: XCTestCase {
         let noise = Harness.addNoise([Float](repeating: 0, count: Int(fs * 0.6)),
                                      level: 0.15, seed: 4242)
         guard let d = detect(noise) else { return XCTFail("expected a scored result") }
-        XCTAssertLessThan(d.contrast, HarmonicScorer.minimumContrast,
-                          "noise scored contrast \(d.contrast)")
+        XCTAssertLessThan(d.contrast, TargetTracker.holdContrast,
+                          "noise scored contrast \(d.contrast) — it must not even hold")
     }
 
     func testScoringFollowsTheReferencePitch() {

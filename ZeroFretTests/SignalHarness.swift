@@ -5,6 +5,10 @@ import Foundation
 /// persistent state, then a sliding window into the detector. Tests must run the
 /// same chain the app does or they prove nothing about the app.
 enum Harness {
+    /// Which string the tracker was following on each gated frame, parallel to
+    /// the results of the most recent `run`. Nil while it was searching.
+    nonisolated(unsafe) static var trackedStrings: [Int?] = []
+
     /// - Parameter gated: run the noise gate and the pitch-stability gate too,
     ///   as `DetectionWorker` does. Off by default so detector-level tests can
     ///   look at raw output; the acceptance tests turn it on.
@@ -19,12 +23,13 @@ enum Harness {
         let filter = Biquad(sampleRate: sampleRate)
         let smoother = smoothing.map { Smoother(mode: $0) }
         let noiseGate = NoiseGate()
-        var stability = PitchStability()
+        var tracker = TargetTracker()
 
         var history = [Float](repeating: 0, count: windowSize)
         var filled = 0
         var results: [PitchResult] = []
         var offset = 0
+        trackedStrings.removeAll()
 
         while offset + hop <= signal.count {
             var block = Array(signal[offset..<(offset + hop)])
@@ -38,17 +43,29 @@ enum Harness {
             filled = min(filled + hop, windowSize)
             guard filled >= windowSize else { continue }
 
-            var result = history.withUnsafeBufferPointer { detector.process($0.baseAddress!) }
+            var result: PitchResult
             if gated {
-                // Mirrors DetectionWorker: harmonic contrast and stability decide,
-                // level does not veto. See the note in NoiseGate.
+                // Mirrors DetectionWorker exactly: transform, let the spectrum
+                // say which string, then search the lag domain only around that
+                // answer, then let the tracker decide. Running anything else
+                // here would prove nothing about the app.
+                history.withUnsafeBufferPointer { detector.analyse($0.baseAddress!) }
                 let scorer = HarmonicScorer(detector: detector)
-                let contrast = scorer.detect(in: gateTuning, referenceA: 440)?.contrast ?? 0
-                let standsOut = contrast >= HarmonicScorer.minimumContrast
+                let scored = scorer.detect(in: gateTuning, referenceA: 440)
+                result = tracker.read(from: detector, proposedBy: scored)
+                let outcome = tracker.update(pitch: result, detection: scored) { index in
+                    guard index >= 0 && index < gateTuning.midiNotes.count else { return 0 }
+                    return MusicMath.frequency(midi: Double(gateTuning.midiNotes[index]),
+                                               referenceA: 440)
+                }
                 noiseGate.update(rms: result.rms, dt: Double(hop) / sampleRate,
-                                 instrumentPresent: standsOut)
-                result.hasPitch = stability.admit(frequency: result.frequency,
-                                                  voiced: result.hasPitch && standsOut)
+                                 instrumentPresent: tracker.isTracking)
+                result.hasPitch = outcome.voiced
+                if outcome.voiced { result.frequency = outcome.frequency }
+                trackedStrings.append(outcome.string)
+            } else {
+                result = history.withUnsafeBufferPointer { detector.process($0.baseAddress!) }
+                trackedStrings.append(nil)
             }
             if let smoother, result.hasPitch {
                 result.frequency = smoother.process(hz: result.frequency,

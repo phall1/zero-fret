@@ -145,6 +145,12 @@ struct TunerView: View {
 
     private var accent: Color { Theme.color(for: engine.display.direction) }
 
+    /// Coasting readings are dimmed rather than blanked. The detector keeps
+    /// following a string for half a second after the evidence thins out, which
+    /// is what stops a decaying note flickering off and back on — but the reading
+    /// is being repeated, not measured, and the display should say so.
+    private var coastOpacity: Double { engine.display.isHeld ? 0.45 : 1 }
+
     private var noteGlyph: some View {
         VStack(spacing: 2) {
             HStack(alignment: .firstTextBaseline, spacing: 2) {
@@ -165,6 +171,8 @@ struct TunerView: View {
                 .foregroundStyle(Theme.muted)
                 .opacity(engine.display.hasPitch ? 1 : 0.35)
         }
+        .opacity(coastOpacity)
+        .animation(.easeOut(duration: 0.18), value: engine.display.isHeld)
         .accessibilityElement(children: .combine)
         .accessibilityIdentifier("noteGlyph")
         .accessibilityLabel(accessibilitySummary)
@@ -172,6 +180,7 @@ struct TunerView: View {
 
     private var shouldGlow: Bool {
         engine.display.hasPitch && engine.display.direction == .inTune
+            && !engine.display.isHeld
     }
 
     private var targetLine: String {
@@ -189,6 +198,8 @@ struct TunerView: View {
                      hasPitch: engine.display.hasPitch,
                      inTune: engine.display.direction == .inTune,
                      color: accent)
+            .opacity(coastOpacity)
+            .animation(.easeOut(duration: 0.18), value: engine.display.isHeld)
     }
 
     private var readout: some View {
@@ -205,6 +216,8 @@ struct TunerView: View {
         }
         .foregroundStyle(engine.display.hasPitch ? accent : Theme.faint)
         .shadow(color: shouldGlow ? accent.opacity(0.45) : .clear, radius: 11)
+        .opacity(coastOpacity)
+        .animation(.easeOut(duration: 0.18), value: engine.display.isHeld)
         .accessibilityHidden(true)
     }
 

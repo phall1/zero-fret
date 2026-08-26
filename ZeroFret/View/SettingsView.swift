@@ -108,7 +108,7 @@ struct SettingsView: View {
                 } header: {
                     Text("Signal")
                 } footer: {
-                    Text("Contrast is how far the best-fitting string stands out from frequencies that are not strings at all; a plucked note reads well above 4.5, a room reads near 2. The gate learns the room only from moments when nothing is playing, and the sample rate is whatever the route actually reports.")
+                    Text("Contrast is how far the best-fitting string stands out from frequencies that are not strings at all. A plucked note reads well into double figures, a room reads near 2. It takes 8 to pick a string up and only 2.6 to keep following one, because deciding what is playing is a much harder question than deciding whether it is still playing. The gate learns the room only from moments when nothing is playing, and the sample rate is whatever the route actually reports.")
                 }
                 .listRowBackground(Theme.stageRaised)
                 .font(.system(.body, design: .rounded).monospacedDigit())

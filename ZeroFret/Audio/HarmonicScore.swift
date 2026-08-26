@@ -54,15 +54,36 @@ final class HarmonicScorer {
     static let searchStepCents = 2.0
     /// A predicted partial counts as present at this share of the strongest one.
     static let presenceFraction = 0.15
-    /// Below this the winning target does not stand out from frequencies that
-    /// are not targets at all. Measured medians through a modelled phone
-    /// microphone: guitar 7.2–28.9, background speech 4.3–5.6, room noise 2.1.
-    static let minimumContrast = 4.5
+    /// A reference point for what "standing out" means, not a decision.
+    ///
+    /// Measured medians through a modelled phone microphone: guitar 7.2–28.9,
+    /// background speech 4.3–5.6, room noise 2.1. This value sits between the
+    /// instrument and the room and was, for one build, the single threshold the
+    /// whole app turned on.
+    ///
+    /// It no longer is. Finding a note and following one need different bars —
+    /// see `TargetTracker`, which owns both — and collapsing them onto one
+    /// number is what made the app let go of decaying notes. Kept because the
+    /// distributions above are worth stating somewhere, and because a test
+    /// asserting a guitar beats a room needs a number to point at.
+
+    /// Bins per block when estimating the in-frame noise floor. At 5.9 Hz per
+    /// bin this is a ~140 Hz neighbourhood — wide enough that a harmonic is a
+    /// sparse outlier within it, narrow enough to follow the spectral tilt of
+    /// room tone and microphone rolloff.
+    static let floorBlockBins = 24
+    /// The percentile of each block taken as its noise floor. Low enough to sit
+    /// under the harmonics, high enough not to be chasing individual nulls.
+    static let floorPercentile = 0.3
+    /// How much of the estimated floor is removed. Full subtraction leaves the
+    /// residual ragged where the estimate is slightly high; over-subtracting a
+    /// little and clamping at zero is the standard remedy.
+    static let floorOversubtraction = 1.5
 
     private let sampleRate: Double
     private let binWidth: Double
     private let bins: Int
-    private let spectrum: UnsafePointer<Float>
+    private let spectrum: UnsafeMutablePointer<Float>
     private let totalEnergy: Double
 
     /// - Parameter detector: must have just run `process`; the spectrum is
@@ -71,18 +92,76 @@ final class HarmonicScorer {
         sampleRate = detector.sampleRate
         binWidth = detector.binWidth
         bins = detector.spectrumBins
-        spectrum = detector.powerSpectrum
+        spectrum = detector.whitenedSpectrum
+
+        let lo = max(1, Int(30.0 / binWidth))
+        let hi = min(bins - 1, Int(HarmonicScorer.analysisCeilingHz / binWidth))
+
+        HarmonicScorer.whiten(spectrum, from: lo, to: hi)
 
         // Total energy over the band the pre-filter actually passes. Comparing
         // against the full spectrum would let out-of-band content dilute every
         // score equally and make the measure useless.
-        let lo = max(1, Int(30.0 / binWidth))
-        let hi = min(bins - 1, Int(HarmonicScorer.analysisCeilingHz / binWidth))
         var sum = 0.0
         if hi > lo {
             for i in lo...hi { sum += Double(spectrum[i]) }
         }
         totalEnergy = sum
+    }
+
+    /// Removes the in-frame noise floor from the power spectrum, in place.
+    ///
+    /// Every score here is a ratio against the in-band total, so stationary
+    /// noise does not cancel out — it inflates the denominator *and* leaks into
+    /// every candidate's partials, lifting the decoys and squashing contrast.
+    /// Measured on a decaying note into room tone, contrast fell from 9 to
+    /// below the acceptance threshold while the correct string was still being
+    /// named on every frame: the evidence was there and the statistic was
+    /// hiding it.
+    ///
+    /// The estimate is taken across frequency within the frame rather than
+    /// across time, which matters: a temporal tracker following a note that
+    /// rings for six seconds eventually learns the note as noise. Harmonics are
+    /// sparse peaks and room tone is smooth, so a low percentile of each
+    /// frequency block is a good floor and needs no history at all.
+    ///
+    /// This is PEFAC's spectral normalisation (Gonzalez & Brookes 2011) reduced
+    /// to its causal, in-frame core, and the same move as the spectral
+    /// whitening in Klapuri's multipitch front end.
+    static func whiten(_ p: UnsafeMutablePointer<Float>, from lo: Int, to hi: Int) {
+        guard hi > lo + floorBlockBins else { return }
+        let blocks = (hi - lo) / floorBlockBins
+        guard blocks >= 2 else { return }
+
+        var floors = [Float](repeating: 0, count: blocks)
+        var scratch = [Float](repeating: 0, count: floorBlockBins)
+        for b in 0..<blocks {
+            let start = lo + b * floorBlockBins
+            for i in 0..<floorBlockBins { scratch[i] = p[start + i] }
+            scratch.sort()
+            floors[b] = scratch[Int(Double(floorBlockBins - 1) * floorPercentile)]
+        }
+
+        // Linear interpolation between block centres, so the subtracted floor
+        // is continuous rather than a staircase that leaves seams at the joins.
+        for b in 0..<blocks {
+            let start = lo + b * floorBlockBins
+            let here = floors[b]
+            let next = floors[Swift.min(b + 1, blocks - 1)]
+            let prev = floors[Swift.max(b - 1, 0)]
+            for i in 0..<floorBlockBins {
+                let u = (Float(i) + 0.5) / Float(floorBlockBins)
+                let f = u < 0.5 ? prev + (here - prev) * (u + 0.5)
+                                : here + (next - here) * (u - 0.5)
+                p[start + i] = Swift.max(0, p[start + i] - f * Float(floorOversubtraction))
+            }
+        }
+        // Tail bins the blocking did not cover keep the last floor.
+        let covered = lo + blocks * floorBlockBins
+        if covered <= hi {
+            let f = floors[blocks - 1] * Float(floorOversubtraction)
+            for i in covered...hi { p[i] = Swift.max(0, p[i] - f) }
+        }
     }
 
     /// Energy at one partial: the strongest bin within tolerance of its ideal

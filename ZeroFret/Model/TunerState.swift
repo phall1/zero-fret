@@ -31,6 +31,9 @@ struct DetectionSnapshot {
     var harmonicString: Int = -1
     /// How far the winning target stood out from non-targets. See HarmonicScorer.
     var contrast: Double = 0
+    /// True when this frame carries the previous reading forward because the
+    /// tracker is still following the string but had no evidence this hop.
+    var isHeld: Bool = false
 }
 
 /// Lock-free SPSC triple buffer for a trivially copyable payload.
@@ -138,6 +141,10 @@ struct DisplayState: Equatable {
     var stringIndex: Int?
     var isChromaticFallback = false
     var direction: TuneDirection = .inTune
+    /// The reading is being coasted rather than freshly measured. The stage
+    /// dims itself rather than blanking — a tuner that flickers off between
+    /// uncertain frames reads as broken, and the string really is still there.
+    var isHeld = false
 
     var noteLabel: String { hasPitch ? "\(noteName)\(octave)" : "—" }
 

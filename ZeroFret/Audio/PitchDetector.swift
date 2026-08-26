@@ -33,8 +33,22 @@ final class PitchDetector {
     /// Below 0.8 gives subharmonic errors; above 0.95 degenerates to global-max.
     static let peakThresholdRatio: Float = 0.9
 
-    /// §3 clarity gate.
+    /// §3 clarity gate, for an open search over the whole pitch range.
     static let clarityFloor: Double = 0.60
+
+    /// Clarity gate when the search is constrained to a known target.
+    ///
+    /// The 0.60 floor is not really a measure of confidence — it is the guard
+    /// against octave and subharmonic errors, which is what an unconstrained
+    /// NSDF produces when noise starts to dominate. Measured on a note decaying
+    /// into room tone, the readings below the floor were 41 Hz, 27 Hz and 63 Hz
+    /// against a true 82: not uncertain, wrong by whole octaves.
+    ///
+    /// Restricting the lag bracket to a narrow window around a target removes
+    /// those candidates from the search entirely, so the floor is no longer
+    /// carrying that weight and can come down to where it only rejects frames
+    /// with no periodicity at all.
+    static let trackingClarityFloor: Double = 0.22
 
     /// Bracket of periods we are willing to report. 25 Hz sits below a 5-string
     /// bass B0 (30.87 Hz); 1300 Hz is comfortably above anything that survives
@@ -60,6 +74,10 @@ final class PitchDetector {
     private let outIm: UnsafeMutablePointer<Float>
     private let squares: UnsafeMutablePointer<Float>
     private let nsdf: UnsafeMutablePointer<Float>
+    /// A working copy of the power spectrum that `HarmonicScorer` may modify.
+    /// Separate from `inRe` so whitening never damages the raw spectrum, which
+    /// the tests compare against.
+    private let whitened: UnsafeMutablePointer<Float>
 
     private static let maxCandidates = 512
     private var candidateTau = [Int](repeating: 0, count: maxCandidates)
@@ -96,6 +114,7 @@ final class PitchDetector {
         outIm = .allocate(capacity: fftLength); outIm.initialize(repeating: 0, count: fftLength)
         squares = .allocate(capacity: windowSize); squares.initialize(repeating: 0, count: windowSize)
         nsdf = .allocate(capacity: windowSize + 2); nsdf.initialize(repeating: 0, count: windowSize + 2)
+        whitened = .allocate(capacity: windowSize); whitened.initialize(repeating: 0, count: windowSize)
 
         let loTau = Int((sampleRate / PitchDetector.maxFrequency).rounded(.down))
         let hiTau = Int((sampleRate / PitchDetector.minFrequency).rounded(.up))
@@ -109,22 +128,62 @@ final class PitchDetector {
         vDSP_destroy_fftsetup(fftSetup)
         inRe.deallocate(); inIm.deallocate()
         outRe.deallocate(); outIm.deallocate()
-        squares.deallocate(); nsdf.deallocate()
+        squares.deallocate(); nsdf.deallocate(); whitened.deallocate()
     }
 
-    /// - Parameter window: exactly `windowSize` pre-filtered frames.
-    func process(_ window: UnsafePointer<Float>) -> PitchResult {
+    /// A mutable copy of the most recent power spectrum, for the scorer to
+    /// whiten in place. Valid until the next `process`.
+    var whitenedSpectrum: UnsafeMutablePointer<Float> {
+        memcpy(whitened, inRe, spectrumBins * MemoryLayout<Float>.size)
+        return whitened
+    }
+
+    /// - Parameters:
+    ///   - window: exactly `windowSize` pre-filtered frames.
+    ///   - expecting: when the tuner already knows which string it is following,
+    ///     the frequency it expects. The lag search is then restricted to a
+    ///     narrow bracket around it and takes the strongest peak inside, rather
+    ///     than searching the whole range for the first peak clearing a bar.
+    ///     This is the difference between asking "what is playing?" and "is this
+    ///     still ringing?", and the second question survives far more noise.
+    ///   - toleranceCents: half-width of that bracket. Wide enough for a bend
+    ///     and for a string a semitone out of tune, narrow enough to exclude the
+    ///     octave below.
+    ///
+    /// Equivalent to `analyse` followed by `pitch`. The two-call form exists
+    /// because the harmonic scorer needs the spectrum in order to say *what*
+    /// the lag search should be looking for, so the search cannot run until
+    /// after it has: analyse, score, then pitch.
+    func process(_ window: UnsafePointer<Float>,
+                 expecting: Double? = nil,
+                 toleranceCents: Double = 320) -> PitchResult {
+        guard analyse(window) else {
+            return PitchResult(frequency: 0, clarity: 0, rms: lastRMS, hasPitch: false)
+        }
+        return pitch(near: expecting, toleranceCents: toleranceCents)
+    }
+
+    /// RMS of the most recent `analyse`.
+    private(set) var lastRMS: Double = 0
+
+    /// Transforms the window: RMS, autocorrelation, NSDF, power spectrum.
+    /// Returns false when there is nothing to analyse.
+    @discardableResult
+    func analyse(_ window: UnsafePointer<Float>) -> Bool {
         let n = windowSize
 
         // --- RMS, and the running power sum m(0)/2 -------------------------
         var meanSquare: Float = 0
         vDSP_measqv(window, 1, &meanSquare, vDSP_Length(n))
         let rms = Double(sqrt(meanSquare))
+        lastRMS = rms.isFinite ? rms : 0
         vDSP_vsq(window, 1, squares, 1, vDSP_Length(n))
         var sumSquares: Float = 0
         vDSP_sve(squares, 1, &sumSquares, vDSP_Length(n))
         guard sumSquares > 0, rms.isFinite else {
-            return PitchResult(frequency: 0, clarity: 0, rms: rms.isFinite ? rms : 0, hasPitch: false)
+            memset(inRe, 0, fftLength * MemoryLayout<Float>.size)
+            memset(nsdf, 0, (windowSize + 2) * MemoryLayout<Float>.size)
+            return false
         }
 
         // --- r(τ) via FFT --------------------------------------------------
@@ -151,7 +210,8 @@ final class PitchDetector {
         // n'(0) exactly 1, which is the identity the NSDF is defined to have.
         let rZero = outRe[0]
         guard rZero > 0, rZero.isFinite else {
-            return PitchResult(frequency: 0, clarity: 0, rms: rms, hasPitch: false)
+            memset(nsdf, 0, (windowSize + 2) * MemoryLayout<Float>.size)
+            return false
         }
         let scale = sumSquares / rZero
 
@@ -166,24 +226,51 @@ final class PitchDetector {
             nsdf[tau] = m > 1e-20 ? (2 * outRe[tau] * scale) / m : 0
             tau += 1
         }
+        return true
+    }
 
-        // --- Peak picking ----------------------------------------------------
-        let candidates = collectCandidates()
-        guard candidates > 0 else {
-            return PitchResult(frequency: 0, clarity: 0, rms: rms, hasPitch: false)
-        }
+    /// Picks a period out of the NSDF left by the last `analyse`.
+    /// - Parameter near: when non-nil, the search is restricted to a bracket
+    ///   around this frequency and takes the strongest lag inside it.
+    func pitch(near: Double? = nil, toleranceCents: Double = 320) -> PitchResult {
+        let rms = lastRMS
 
-        var maxVal: Float = 0
-        for i in 0..<candidates where candidateVal[i] > maxVal { maxVal = candidateVal[i] }
-        guard maxVal > 0 else {
-            return PitchResult(frequency: 0, clarity: 0, rms: rms, hasPitch: false)
-        }
-
-        // The whole trick: FIRST candidate over the bar, not the biggest one.
-        let bar = PitchDetector.peakThresholdRatio * maxVal
         var chosen = -1
-        for i in 0..<candidates where candidateVal[i] >= bar { chosen = candidateTau[i]; break }
-        guard chosen > 0 else {
+        let constrained: Bool
+        if let expecting = near, expecting > 0 {
+            constrained = true
+            // The bracket is in lag, so the high frequency maps to the low lag.
+            let hiHz = expecting * pow(2, toleranceCents / 1200)
+            let loHz = expecting * pow(2, -toleranceCents / 1200)
+            let lo = max(tauMin, Int((sampleRate / hiHz).rounded(.down)))
+            let hi = min(tauMax, Int((sampleRate / loHz).rounded(.up)))
+            guard lo < hi else {
+                return PitchResult(frequency: 0, clarity: 0, rms: rms, hasPitch: false)
+            }
+            // Strongest lag in the bracket. There is no octave to confuse it
+            // with inside a bracket this narrow, so the first-peak rule that
+            // exists to avoid octave errors has nothing left to do — and it is
+            // the rule that fails first as clarity drops.
+            var best: Float = -.infinity
+            for t in lo...hi where nsdf[t] > best { best = nsdf[t]; chosen = t }
+        } else {
+            constrained = false
+            let candidates = collectCandidates()
+            guard candidates > 0 else {
+                return PitchResult(frequency: 0, clarity: 0, rms: rms, hasPitch: false)
+            }
+
+            var maxVal: Float = 0
+            for i in 0..<candidates where candidateVal[i] > maxVal { maxVal = candidateVal[i] }
+            guard maxVal > 0 else {
+                return PitchResult(frequency: 0, clarity: 0, rms: rms, hasPitch: false)
+            }
+
+            // The whole trick: FIRST candidate over the bar, not the biggest one.
+            let bar = PitchDetector.peakThresholdRatio * maxVal
+            for i in 0..<candidates where candidateVal[i] >= bar { chosen = candidateTau[i]; break }
+        }
+        guard chosen > 0, chosen < tauMax + 1 else {
             return PitchResult(frequency: 0, clarity: 0, rms: rms, hasPitch: false)
         }
 
@@ -206,7 +293,9 @@ final class PitchDetector {
         let clarity = min(max(y1 - 0.25 * (y0 - y2) * delta, 0), 1)
         let frequency = sampleRate / tauInterpolated
 
-        let believable = clarity >= PitchDetector.clarityFloor
+        let floor = constrained ? PitchDetector.trackingClarityFloor
+                                : PitchDetector.clarityFloor
+        let believable = clarity >= floor
             && frequency >= PitchDetector.minFrequency
             && frequency <= PitchDetector.maxFrequency
 

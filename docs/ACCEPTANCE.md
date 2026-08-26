@@ -36,7 +36,7 @@ has ProMotion, which criteria 8 and the 120 Hz path need.
 | 6 | Incoming call, then dismiss: resumes automatically | Call the phone from another one, decline. The reading should come back with no interaction. | ☐ |
 | 8 | Cold launch to first pitch reading < 400 ms, device unplugged | Force-quit, start a stopwatch, launch and pick. 4096 at 48 kHz is an 85 ms window; the rest is engine start. | ☐ |
 | 9 | Hold in tune for 60 s: exactly one haptic tick | Tune, then hold. The §7 latch does not re-arm until the note passes ±3× tolerance. | ☐ |
-| 10 | Silence for 10 s: display blanks, idle timer re-enabled | Watch the readout blank after 250 ms of hold, then leave it. Sleep re-enables 45 s later. | ☐ |
+| 10 | Silence for 10 s: display blanks, idle timer re-enabled | The stage dims first — the tracker coasts for up to ~550 ms after the evidence stops — then blanks after the 250 ms display hold. Sleep re-enables 45 s later. | ☐ |
 | 11 | Instruments, 5 min continuous: no allocation growth, no priority inversions on the audio thread | Allocations + Time Profiler. The tap does one `memcpy` and one atomic store; anything else showing up there is a regression. | ☐ |
 
 ## UI coverage
@@ -50,14 +50,40 @@ It is not a substitute for any of the device tests above — the input is
 generated, so it says nothing about the microphone, the audio session, or the
 detector's behaviour on a real string.
 
-## Noise rejection
+## Noise rejection and the low-signal end
 
-`Scripts/` has no benchmark for this, but the scenario harness used to tune the
-gates lives in the commit history for `fix(audio): separate the instrument from
-the room`. It replays a plucked string, sympathetic ringing of the other five,
-pick attack, room noise and synthesised speech through a modelled phone
-microphone, and reports voiced-frame rate, string-assignment correctness and
-switch count.
+```sh
+Scripts/bench/run.sh          # metrics table
+Scripts/bench/run.sh sweep     # threshold sweep
+```
+
+Every threshold in the detection path was chosen by running this. It compiles
+the app's real DSP sources — not a copy — against synthesised material through a
+modelled phone microphone: an unplugged solid-body whose fundamental barely
+radiates, an acoustic with the other five strings ringing sympathetically,
+glottal-pulse speech that glides, and pink room tone with mains hum.
+
+It reports what a tuner is actually judged on, which is not accuracy alone:
+
+| | |
+|---|---|
+| `lock` | ms from the start of the note to the first reading shown |
+| `sharp` | ms until the reading is inside 3¢ and stays there |
+| `hold` | ms until the last frame still tracking |
+| `cov%` | share of the note's life with a reading on screen |
+| `str%` | share of readings naming the right string |
+| `err` / `jit` | median error, and median frame-to-frame movement — the visible wobble |
+
+and, separately, how many readings appear when nothing is being played at all.
+
+The level axis is deliberately not the interesting one: contrast, clarity and
+the NSDF are all scale-free, so a clean signal reads identically at −45 and
+−92 dBFS. What actually decides whether a quiet instrument works is its ratio to
+the room, which is what the `+ room` rows sweep.
+
+Two rows are load-bearing regression guards. `bend E4` must stay high, or a
+change has bought noise rejection by refusing to follow a bent string. `speech`
+must stay near zero, or it has bought coverage by inventing notes.
 
 Thresholds in `PitchStability` were swept against that set rather than chosen by
 feel; the sweep table is in the source. They are calibrated to a *model* of a

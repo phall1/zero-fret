@@ -68,6 +68,54 @@ NSDF peak at or above 0.9 × max, not the global maximum — the global maximum 
 at 2τ or 3τ often enough that naive tuners read low E as E3. Parabolic
 interpolation on the chosen peak; without it the resolution floor is ~6¢ at E4.
 
+**Two questions, not one.** Finding a note and following one are different
+problems, and asking them with the same thresholds is what made the app let go
+of notes a guitarist could still plainly hear. Traced on an unplugged low E
+decaying into room tone, the harmonic scorer named E2 correctly out to five
+seconds while clarity and contrast both fell through their floors at 2.5 s — the
+evidence was sitting there and the display went dark.
+
+So the detector has two states. **Searching** is strict: contrast 8.0, nine
+agreeing frames, the whole 25–1300 Hz range in play, because the answer might be
+"nothing" and being wrong invents a note out of the room. **Tracking** is not:
+there is one hypothesis, its frequency is known to within a few cents, and being
+wrong costs a stale reading rather than a false one. Contrast drops to 2.6 and
+the lag search is confined to a bracket around the string being followed.
+
+That bracket is what lets the floors come down. The readings that made a 0.60
+clarity gate necessary were 41 Hz, 27 Hz and 63 Hz against a true 82 — an
+unconstrained lag search collapsing to subharmonics as noise closes in. Inside a
+narrow bracket those candidates do not exist, so the gate is no longer carrying
+that weight.
+
+|                          | one state | two states |
+|--------------------------|-----------|------------|
+| acoustic E2              | 4.2 s     | 6.0 s      |
+| unplugged E2, quiet room | 3.5 s     | 5.8 s      |
+| unplugged E2, 9 dB down  | 2.4 s     | 4.3 s      |
+| unplugged E2, 2 dB down  | 1.1 s     | 2.9 s      |
+
+*Time still tracking, against room tone at −72 dBFS.*
+
+The same split fixes acquisition, because the spectrum and the NSDF are each
+reliable at a different question. The scorer says *which string*; the NSDF says
+exactly *where* it is, searching only around that answer. Neither is asked to
+work alone.
+
+That steering is a rescue, never a replacement — the open search runs first and
+the constrained one only when it fails. The scorer can only ever propose one of
+six strings, so it has an opinion about signals that are not strings at all: a
+bare 440 Hz reference tone was read as D3, because 440 is the third harmonic of
+146.67 and of the six hypotheses D3 explains it best. Asking openly first costs
+one extra scan of an array that is already computed and keeps §4's chromatic
+fallback intact.
+
+**Coasting.** Inside the release window the last reading is republished and the
+stage dims rather than blanking. A tuner that flickers off between the frames it
+is unsure about reads as broken even when the detector is doing the right thing.
+The window is bounded at ~550 ms: a reading older than that is a lie, not a
+kindness.
+
 **Telling the instrument from the room.** A tuner knows its own answers: there
 are six of them. So rather than estimating a frequency and then asking which
 string it lands near, the detector asks how well each *target* explains the
@@ -85,6 +133,16 @@ Four things gate a reading, multiplicatively, because no single one is enough:
   speech 4.3–5.6, room noise 2.1.
 - **Pitch stability**, because a plucked string settles and stays put while
   speech glides.
+
+The spectrum is whitened before any of this: the in-frame noise floor, estimated
+as a low percentile of each ~140 Hz block, is subtracted from every bin. Every
+score here is a ratio against the in-band total, so stationary room tone does not
+cancel out — it inflates the denominator *and* leaks into every candidate's
+partials, lifting the decoys and squashing the contrast between them. It is
+PEFAC's spectral normalisation reduced to its causal core, and it halves the
+frames on which speech is mistaken for an instrument. Estimating across frequency
+rather than across time matters: a temporal tracker following a note that rings
+for six seconds eventually learns the note as noise.
 
 Level deliberately is *not* among them either, which is the correction that
 made the tuner work on an unplugged electric. A solid body has no soundboard and

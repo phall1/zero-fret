@@ -16,6 +16,7 @@
 		04F0642247B3AF69F61CA9E3 /* NoiseGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4B8E00100D2A59C23A56853 /* NoiseGate.swift */; };
 		295945BA6669BF640E9623B3 /* PitchStability.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8CF620D91ECFCBDB0E880B /* PitchStability.swift */; };
 		48C9AA290723D27789DAE453 /* HarmonicScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A6A757FFFD1B5C47A69FFF7 /* HarmonicScore.swift */; };
+		E5A96E470AE5F83F0BCDA77F /* TargetTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62D151065D240E9A14AB18BB /* TargetTracker.swift */; };
 		A8A16C5EE9C9BA8E9EBAD86D /* DetectionWorker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 667328023832E92E7863EACF /* DetectionWorker.swift */; };
 		4A6733DDC7510D6FAD3A0673 /* SyntheticInput.swift in Sources */ = {isa = PBXBuildFile; fileRef = D2344FA0C5111C86D9816763 /* SyntheticInput.swift */; };
 		C5023DBA0EA8D1974E866CE4 /* Tuning.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE58EC0660EE212EE97129FD /* Tuning.swift */; };
@@ -36,6 +37,7 @@
 		BFF2AB65F1894B56EDAFE416 /* NoiseGate.swift in Sources */ = {isa = PBXBuildFile; fileRef = F4B8E00100D2A59C23A56853 /* NoiseGate.swift */; };
 		FC105D4C799DC774AD338F80 /* PitchStability.swift in Sources */ = {isa = PBXBuildFile; fileRef = CC8CF620D91ECFCBDB0E880B /* PitchStability.swift */; };
 		10E146DB0B938FE6A5F7BDA2 /* HarmonicScore.swift in Sources */ = {isa = PBXBuildFile; fileRef = 5A6A757FFFD1B5C47A69FFF7 /* HarmonicScore.swift */; };
+		98355D6C15CB45EB8D51219E /* TargetTracker.swift in Sources */ = {isa = PBXBuildFile; fileRef = 62D151065D240E9A14AB18BB /* TargetTracker.swift */; };
 		232AD04E91E9E52FAF456276 /* Tuning.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE58EC0660EE212EE97129FD /* Tuning.swift */; };
 		D953D7C4D5AAFEFCCE3D086A /* TunerState.swift in Sources */ = {isa = PBXBuildFile; fileRef = D27E16B0947C411121E177B9 /* TunerState.swift */; };
 		AC074B463160870A52810CC4 /* StringAssigner.swift in Sources */ = {isa = PBXBuildFile; fileRef = 533A60FA54815C50565EF4AF /* StringAssigner.swift */; };
@@ -49,6 +51,7 @@
 		61EE68069C0FB9FA1FAB1D2D /* NoiseGateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9AAB86749BE67E74A64F3D5E /* NoiseGateTests.swift */; };
 		84F0687CAFC70667D2C2CC40 /* PitchStabilityTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 9978FC64090F32737F7D2374 /* PitchStabilityTests.swift */; };
 		8A9E0E7455C90ACBD4DEFA9D /* HarmonicScoreTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 89A53DEB0BE99966ABE1978B /* HarmonicScoreTests.swift */; };
+		03E3BA56984C42184494E6A4 /* TargetTrackerTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 19F9CA9057C0169497B35333 /* TargetTrackerTests.swift */; };
 		DD982EA135731D8060606896 /* AcceptanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A7492A8B8E69713AEDE15BF /* AcceptanceTests.swift */; };
 		1DA7A1F4205219C0C9320732 /* TunerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0AA5E9427576C016E152058 /* TunerUITests.swift */; };
 /* End PBXBuildFile section */
@@ -67,6 +70,7 @@
 		95A04407A6E98DEAE6CF2EC4 /* RingBuffer.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = RingBuffer.swift; sourceTree = "<group>"; };
 		5B723272C286BFAA306F34E7 /* Smoother.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Smoother.swift; sourceTree = "<group>"; };
 		D2344FA0C5111C86D9816763 /* SyntheticInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntheticInput.swift; sourceTree = "<group>"; };
+		62D151065D240E9A14AB18BB /* TargetTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetTracker.swift; sourceTree = "<group>"; };
 		DE1B96165915B017BE7CA91B /* TrueTick.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrueTick.swift; sourceTree = "<group>"; };
 		533A60FA54815C50565EF4AF /* StringAssigner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringAssigner.swift; sourceTree = "<group>"; };
 		99363D9CDC66EDD1B80E0DC9 /* TunerEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerEngine.swift; sourceTree = "<group>"; };
@@ -90,6 +94,7 @@
 		0C5EB9D703C88D5D92F7FC42 /* SignalHarness.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SignalHarness.swift; sourceTree = "<group>"; };
 		479C128B88DD7679A60E28A5 /* SmootherTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SmootherTests.swift; sourceTree = "<group>"; };
 		8383CB33C1BBA8699EEA79A2 /* StringAssignerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringAssignerTests.swift; sourceTree = "<group>"; };
+		19F9CA9057C0169497B35333 /* TargetTrackerTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetTrackerTests.swift; sourceTree = "<group>"; };
 		C0AA5E9427576C016E152058 /* TunerUITests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerUITests.swift; sourceTree = "<group>"; };
 		DF58D1B925D2AC2EF4D39B94 /* ZeroFret.app */ = {isa = PBXFileReference; explicitFileType = wrapper.application; includeInIndex = 0; path = ZeroFret.app; sourceTree = BUILT_PRODUCTS_DIR; };
 		41C362E204CDC9F42FEE6F17 /* ZeroFretUITests.xctest */ = {isa = PBXFileReference; explicitFileType = wrapper.cfbundle; includeInIndex = 0; path = ZeroFretUITests.xctest; sourceTree = BUILT_PRODUCTS_DIR; };
@@ -148,6 +153,7 @@
 				95A04407A6E98DEAE6CF2EC4 /* RingBuffer.swift */,
 				5B723272C286BFAA306F34E7 /* Smoother.swift */,
 				D2344FA0C5111C86D9816763 /* SyntheticInput.swift */,
+				62D151065D240E9A14AB18BB /* TargetTracker.swift */,
 			);
 			path = Audio;
 			sourceTree = "<group>";
@@ -219,6 +225,7 @@
 				9AAB86749BE67E74A64F3D5E /* NoiseGateTests.swift */,
 				9978FC64090F32737F7D2374 /* PitchStabilityTests.swift */,
 				89A53DEB0BE99966ABE1978B /* HarmonicScoreTests.swift */,
+				19F9CA9057C0169497B35333 /* TargetTrackerTests.swift */,
 				7A7492A8B8E69713AEDE15BF /* AcceptanceTests.swift */,
 			);
 			path = ZeroFretTests;
@@ -403,6 +410,7 @@
 				04F0642247B3AF69F61CA9E3 /* NoiseGate.swift in Sources */,
 				295945BA6669BF640E9623B3 /* PitchStability.swift in Sources */,
 				48C9AA290723D27789DAE453 /* HarmonicScore.swift in Sources */,
+				E5A96E470AE5F83F0BCDA77F /* TargetTracker.swift in Sources */,
 				A8A16C5EE9C9BA8E9EBAD86D /* DetectionWorker.swift in Sources */,
 				4A6733DDC7510D6FAD3A0673 /* SyntheticInput.swift in Sources */,
 				C5023DBA0EA8D1974E866CE4 /* Tuning.swift in Sources */,
@@ -429,6 +437,7 @@
 				BFF2AB65F1894B56EDAFE416 /* NoiseGate.swift in Sources */,
 				FC105D4C799DC774AD338F80 /* PitchStability.swift in Sources */,
 				10E146DB0B938FE6A5F7BDA2 /* HarmonicScore.swift in Sources */,
+				98355D6C15CB45EB8D51219E /* TargetTracker.swift in Sources */,
 				232AD04E91E9E52FAF456276 /* Tuning.swift in Sources */,
 				D953D7C4D5AAFEFCCE3D086A /* TunerState.swift in Sources */,
 				AC074B463160870A52810CC4 /* StringAssigner.swift in Sources */,
@@ -442,6 +451,7 @@
 				61EE68069C0FB9FA1FAB1D2D /* NoiseGateTests.swift in Sources */,
 				84F0687CAFC70667D2C2CC40 /* PitchStabilityTests.swift in Sources */,
 				8A9E0E7455C90ACBD4DEFA9D /* HarmonicScoreTests.swift in Sources */,
+				03E3BA56984C42184494E6A4 /* TargetTrackerTests.swift in Sources */,
 				DD982EA135731D8060606896 /* AcceptanceTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
