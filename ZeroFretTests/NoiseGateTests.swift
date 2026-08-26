@@ -1,136 +1,118 @@
 import XCTest
 
+/// The gate measures the room. It deliberately no longer silences anything —
+/// see the note at the top of NoiseGate.swift for the measurements that led
+/// there. These tests pin the measuring behaviour, and the fact that its
+/// starting position cannot mute a quiet instrument.
 final class NoiseGateTests: XCTestCase {
     private let hop = 1024.0 / 48000.0
 
     private func linear(_ db: Double) -> Double { pow(10, db / 20) }
 
-    func testStartsPermissiveSoTheFirstReadingIsNotBlocked() {
-        // Acceptance test 8: cold launch to first pitch inside 400 ms. A 1 s
-        // calibration cannot gate detection or that is unreachable.
+    // MARK: - The bug this design exists to prevent
+
+    func testAnUnmeasuredRoomCannotSilenceAQuietInstrument() {
+        // The failure that made the tuner deaf to an unplugged electric: the
+        // floor only learned from frames with no instrument, a sustained note
+        // produces none, so the initial guess stood forever and everything
+        // quieter than it was thrown away. An unplugged solid-body arrives at
+        // roughly −60 to −70 dBFS and decays from there.
         let gate = NoiseGate()
-        XCTAssertEqual(gate.thresholdDB, NoiseGate.defaultGateDB)
-        XCTAssertTrue(gate.update(rms: linear(-20), dt: hop, pitchDetected: true))
+        for db in [-55.0, -62.0, -68.0, -72.0] {
+            XCTAssertTrue(gate.update(rms: linear(db), dt: hop, instrumentPresent: true),
+                          "a \(db) dBFS instrument must not start out below the gate")
+        }
     }
 
-    func testCalibratesToFloorPlusTwelve() {
-        let gate = NoiseGate()
-        for _ in 0..<Int(1.2 / hop) {
-            _ = gate.update(rms: linear(-70), dt: hop, pitchDetected: false)
-        }
-        XCTAssertFalse(gate.isCalibrating)
-        // −70 + 12 = −58, inside the clamp.
-        XCTAssertEqual(gate.thresholdDB, -58, accuracy: 0.5)
-    }
-
-    func testClampsToTheSpecifiedRange() {
-        let quiet = NoiseGate()
-        for _ in 0..<Int(1.2 / hop) {
-            _ = quiet.update(rms: linear(-120), dt: hop, pitchDetected: false)
-        }
-        XCTAssertEqual(quiet.thresholdDB, NoiseGate.minGateDB, accuracy: 1e-9)
-
-        // The floor rises at a bounded rate, so a loud room takes a few seconds
-        // to reach the ceiling rather than adopting it on the first frame — that
-        // rate limit is what stops a pick attack pinning the gate over the
-        // instrument. Give it time, then check it clamps.
-        let loud = NoiseGate()
-        for _ in 0..<Int(12.0 / hop) {
-            _ = loud.update(rms: linear(-10), dt: hop, pitchDetected: false)
-        }
-        XCTAssertEqual(loud.thresholdDB, NoiseGate.maxGateDB, accuracy: 1e-9)
-
-        // ...and it must not have got there instantly.
-        let rising = NoiseGate()
-        for _ in 0..<Int(1.0 / hop) {
-            _ = rising.update(rms: linear(-10), dt: hop, pitchDetected: false)
-        }
-        XCTAssertLessThan(rising.thresholdDB, NoiseGate.maxGateDB - 10,
-                          "the floor must not leap to a transient")
+    func testStartingGateIsBelowAnUnpluggedElectric() {
+        XCTAssertLessThanOrEqual(NoiseGate.defaultGateDB, -70.0)
+        XCTAssertLessThanOrEqual(NoiseGate.minGateDB, -75.0,
+                                 "§5's −60 floor is deaf to a solid-body")
     }
 
     func testAPitchRingingThroughCalibrationCannotSetTheFloor() {
-        // The original bug: the floor was the minimum RMS over the window
-        // regardless of whether anything was playing. A note ringing through the
-        // whole second made its own level the floor, the gate clamped to its
-        // -30 dB ceiling, and the note was then gated out as it decayed —
-        // measured at 51-75% of frames rejected. Only unvoiced frames may teach
-        // the gate where silence is.
+        // Only frames with no instrument may teach the gate where silence is.
         let gate = NoiseGate()
+        let before = gate.thresholdDB
         for _ in 0..<Int(3.0 / hop) {
-            _ = gate.update(rms: linear(-18), dt: hop, pitchDetected: true)
+            _ = gate.update(rms: linear(-18), dt: hop, instrumentPresent: true)
         }
-        XCTAssertEqual(gate.thresholdDB, NoiseGate.defaultGateDB, accuracy: 0.001,
-                       "a continuously voiced signal must leave the gate at its default")
-        XCTAssertTrue(gate.update(rms: linear(-42), dt: hop, pitchDetected: true),
-                      "the instrument must still pass as it decays")
+        XCTAssertEqual(gate.thresholdDB, before, accuracy: 0.001,
+                       "a continuously sounding instrument must not move the floor")
     }
 
-    func testAttackTransientCannotDragTheGateUp() {
-        // The pick attack produces loud *unvoiced* frames. Adopting the first
-        // one as the floor pinned the gate to its ceiling, so the floor may only
-        // rise slowly.
+    // MARK: - Measuring the room
+
+    func testFloorFallsInstantlyToAQuietRoom() {
         let gate = NoiseGate()
-        for _ in 0..<3 {
-            _ = gate.update(rms: linear(-6), dt: hop, pitchDetected: false)
+        for _ in 0..<Int(0.2 / hop) {
+            _ = gate.update(rms: linear(-95), dt: hop, instrumentPresent: false)
         }
-        XCTAssertLessThan(gate.thresholdDB, NoiseGate.defaultGateDB + 1.0)
+        XCTAssertEqual(gate.floorDB, -95, accuracy: 0.5, "downward tracking is immediate")
     }
 
-    func testFloorFollowsARoomThatGetsLouder() {
+    func testFloorRisesSlowlyIntoALouderRoom() {
         let gate = NoiseGate()
-        for _ in 0..<Int(1.2 / hop) {
-            _ = gate.update(rms: linear(-70), dt: hop, pitchDetected: false)
+        for _ in 0..<Int(0.2 / hop) {
+            _ = gate.update(rms: linear(-90), dt: hop, instrumentPresent: false)
         }
-        XCTAssertEqual(gate.thresholdDB, -58, accuracy: 0.5)
-        // Room fills up. The floor should climb, but at a bounded rate.
+        // One second of a −40 dB room may only lift the floor by the rate limit.
+        for _ in 0..<Int(1.0 / hop) {
+            _ = gate.update(rms: linear(-40), dt: hop, instrumentPresent: false)
+        }
+        XCTAssertEqual(gate.floorDB, -90 + NoiseGate.floorRiseDBPerSecond, accuracy: 1.0,
+                       "a transient must not drag the floor up with it")
+
+        // Given long enough it does get there.
+        for _ in 0..<Int(30.0 / hop) {
+            _ = gate.update(rms: linear(-40), dt: hop, instrumentPresent: false)
+        }
+        XCTAssertEqual(gate.floorDB, -40, accuracy: 1.0)
+    }
+
+    func testThresholdIsFloorPlusHeadroomAndClamped() {
+        // The floor starts near −84 and may only rise at floorRiseDBPerSecond,
+        // so reaching a −70 room takes several seconds by design. That rate
+        // limit is what stops a pick attack dragging the gate over the
+        // instrument, so the test waits rather than working around it.
+        let gate = NoiseGate()
         for _ in 0..<Int(10.0 / hop) {
-            _ = gate.update(rms: linear(-40), dt: hop, pitchDetected: false)
+            _ = gate.update(rms: linear(-70), dt: hop, instrumentPresent: false)
         }
-        XCTAssertEqual(gate.thresholdDB, -30, accuracy: 1.0)
+        XCTAssertEqual(gate.thresholdDB, -70 + NoiseGate.headroomDB, accuracy: 1.0)
+
+        let loud = NoiseGate()
+        for _ in 0..<Int(60.0 / hop) {
+            _ = loud.update(rms: linear(-5), dt: hop, instrumentPresent: false)
+        }
+        XCTAssertEqual(loud.thresholdDB, NoiseGate.maxGateDB, accuracy: 1e-9)
+
+        // Downward is immediate, but the threshold only republishes once the
+        // initial calibration window has closed.
+        let silent = NoiseGate()
+        for _ in 0..<Int(2.0 / hop) {
+            _ = silent.update(rms: linear(-140), dt: hop, instrumentPresent: false)
+        }
+        XCTAssertEqual(silent.thresholdDB, NoiseGate.minGateDB, accuracy: 1e-9)
     }
 
-    func testRejectsSignalUnderTheGate() {
+    func testRecalibratesAfterFiveSecondsWithNoInstrument() {
         let gate = NoiseGate()
         for _ in 0..<Int(1.2 / hop) {
-            _ = gate.update(rms: linear(-70), dt: hop, pitchDetected: false)
-        }
-        XCTAssertFalse(gate.update(rms: linear(-65), dt: hop, pitchDetected: false))
-        XCTAssertTrue(gate.update(rms: linear(-40), dt: hop, pitchDetected: true))
-    }
-
-    func testRecalibratesAfterFiveQuietSeconds() {
-        let gate = NoiseGate()
-        for _ in 0..<Int(1.2 / hop) {
-            _ = gate.update(rms: linear(-70), dt: hop, pitchDetected: false)
+            _ = gate.update(rms: linear(-70), dt: hop, instrumentPresent: true)
         }
         XCTAssertFalse(gate.isCalibrating)
-        XCTAssertEqual(gate.thresholdDB, -58, accuracy: 0.5)
-
-        // The room gets louder. §5: after 5 s with no pitch the gate must
-        // re-measure rather than sit on a floor that no longer exists.
-        var recalibrationSeen = false
-        var elapsed = 0.0
-        while elapsed < 14.0 {
-            _ = gate.update(rms: linear(-44), dt: hop, pitchDetected: false)
-            if gate.isCalibrating { recalibrationSeen = true }
-            elapsed += hop
+        var seen = false
+        for _ in 0..<Int(7.0 / hop) {
+            _ = gate.update(rms: linear(-70), dt: hop, instrumentPresent: false)
+            if gate.isCalibrating { seen = true }
         }
-        XCTAssertTrue(recalibrationSeen, "§5 requires recalibration after 5 s of no pitch")
-        // The floor climbs to the new room level at the bounded rate and the
-        // gate follows it to −44 + 12 = −32.
-        XCTAssertEqual(gate.thresholdDB, -32, accuracy: 1.0)
+        XCTAssertTrue(seen, "§5 requires recalibration after 5 s with no instrument")
     }
 
-    func testRecalibrationDoesNotRestartWhileAPitchIsPresent() {
-        let gate = NoiseGate()
-        for _ in 0..<Int(1.2 / hop) {
-            _ = gate.update(rms: linear(-70), dt: hop, pitchDetected: false)
-        }
-        for _ in 0..<Int(20.0 / hop) {
-            _ = gate.update(rms: linear(-30), dt: hop, pitchDetected: true)
-        }
-        XCTAssertFalse(gate.isCalibrating)
-        XCTAssertEqual(gate.thresholdDB, -58, accuracy: 0.5)
+    func testDecibelsFloorsAtSilence() {
+        XCTAssertLessThan(NoiseGate.decibels(0), -100)
+        XCTAssertEqual(NoiseGate.decibels(1.0), 0, accuracy: 1e-9)
+        XCTAssertEqual(NoiseGate.decibels(0.1), -20, accuracy: 1e-9)
     }
 }

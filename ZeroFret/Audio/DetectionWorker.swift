@@ -211,7 +211,6 @@ final class DetectionWorker {
     private func analyse() {
         let result = detector.process(filteredHistory)
         let hopSeconds = Double(hopSize) / sampleRate
-        let aboveGate = gate.update(rms: result.rms, dt: hopSeconds, pitchDetected: result.hasPitch)
 
         // Score the tuning's targets against the spectrum the detector just
         // computed. This is the "detection, not estimation" half: rather than
@@ -224,13 +223,21 @@ final class DetectionWorker {
                                    referenceA: referenceA)
         let contrast = scored?.contrast ?? 0
 
-        // Multiplicative, never a single threshold — Tartini's rule. Clarity and
-        // level both pass on background speech; stability rejects most of it and
-        // contrast rejects broadband noise almost entirely. Neither alone is
-        // enough, and neither is a level gate.
+        // Multiplicative, never a single threshold — Tartini's rule. Clarity
+        // passes on background speech; stability rejects most of it, and contrast
+        // rejects broadband noise almost entirely. Neither alone is enough.
+        //
+        // Level is deliberately absent. It rejected an unplugged electric outright
+        // while adding nothing these three do not already do better, and it did so
+        // level-independently. See the note in NoiseGate.
         let standsOut = contrast >= HarmonicScorer.minimumContrast
         let steady = stability.admit(frequency: result.frequency,
-                                     voiced: result.hasPitch && aboveGate && standsOut)
+                                     voiced: result.hasPitch && standsOut)
+
+        // The floor still tracks the room, for the Settings readout and for §5's
+        // recalibration behaviour — fed by frames where no instrument is sounding,
+        // which is what "the room" actually means.
+        gate.update(rms: result.rms, dt: hopSeconds, instrumentPresent: standsOut)
 
         var snapshot = DetectionSnapshot()
         snapshot.timestamp = CACurrentMediaTime()

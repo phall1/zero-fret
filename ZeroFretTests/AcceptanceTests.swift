@@ -179,6 +179,54 @@ final class AcceptanceTests: XCTestCase {
         }
     }
 
+    /// Not in §9, because §9 assumed an instrument you can hear across a room.
+    ///
+    /// An unplugged electric is 20–30 dB quieter than an acoustic and arrives at
+    /// roughly −60 to −70 dBFS before it decays. The original level gate rejected
+    /// 60% of its frames at −63 dBFS and 100% at −75, so the tuner was simply
+    /// deaf to one — not because the detector could not hear it, but because a
+    /// threshold derived from an unmeasured assumption threw it away.
+    func testUnpluggedElectricIsHeardAtEveryString() {
+        for (midi, index) in [(40, 0), (45, 1), (50, 2), (55, 3), (59, 4), (64, 5)] {
+            let f0 = MusicMath.frequency(midi: Double(midi), referenceA: 440)
+            let signal = Harness.unpluggedElectric(fundamental: f0, sampleRate: fs,
+                                                   seconds: 2.0, seed: UInt64(midi))
+            let settled = Harness.settled(Harness.run(signal: signal, sampleRate: fs,
+                                                      windowSize: 4096, smoothing: .fast,
+                                                      gated: true))
+            XCTAssertFalse(settled.isEmpty,
+                           "MIDI \(midi) unplugged produced no reading at all")
+            guard !settled.isEmpty else { continue }
+            let hz = settled.map(\.frequency).sorted()[settled.count / 2]
+            XCTAssertLessThan(abs(Harness.cents(hz, f0)), 10.0,
+                              "MIDI \(midi) unplugged read \(hz) Hz")
+
+            let assigner = StringAssigner()
+            let target = assigner.target(frequency: hz, tuning: TuningLibrary.standard,
+                                         referenceA: 440)
+            XCTAssertEqual(target.stringIndex, index)
+        }
+    }
+
+    func testUnpluggedElectricSurvivesTheQuietTail() {
+        // The note keeps decaying long after it is still worth reading. A level
+        // threshold silences the tail first, which is exactly when a tuner is
+        // most useful — the pitch has settled by then.
+        let f0 = MusicMath.frequency(midi: 40, referenceA: 440)
+        for level in [0.01, 0.003, 0.001, 0.0005] {
+            let signal = Harness.unpluggedElectric(fundamental: f0, sampleRate: fs,
+                                                   seconds: 2.0, level: level)
+            let settled = Harness.settled(Harness.run(signal: signal, sampleRate: fs,
+                                                      windowSize: 4096, smoothing: .fast,
+                                                      gated: true))
+            XCTAssertFalse(settled.isEmpty, "nothing read at level \(level)")
+            guard !settled.isEmpty else { continue }
+            let hz = settled.map(\.frequency).sorted()[settled.count / 2]
+            XCTAssertLessThan(abs(Harness.cents(hz, f0)), 10.0,
+                              "level \(level) read \(hz) Hz")
+        }
+    }
+
     /// §9.10 — silence blanks the display, with no phantom notes.
     func testAcceptance10_SilenceProducesNothing() {
         var signal = Harness.sine(196.0, sampleRate: fs, seconds: 0.5)

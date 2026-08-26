@@ -12,7 +12,8 @@ enum Harness {
                     sampleRate: Double,
                     windowSize: Int,
                     smoothing: ResponseMode? = nil,
-                    gated: Bool = false) -> [PitchResult] {
+                    gated: Bool = false,
+                    gateTuning: Tuning = TuningLibrary.standard) -> [PitchResult] {
         let hop = windowSize / 4
         let detector = PitchDetector(sampleRate: sampleRate, windowSize: windowSize)
         let filter = Biquad(sampleRate: sampleRate)
@@ -39,11 +40,15 @@ enum Harness {
 
             var result = history.withUnsafeBufferPointer { detector.process($0.baseAddress!) }
             if gated {
-                let above = noiseGate.update(rms: result.rms,
-                                             dt: Double(hop) / sampleRate,
-                                             pitchDetected: result.hasPitch)
+                // Mirrors DetectionWorker: harmonic contrast and stability decide,
+                // level does not veto. See the note in NoiseGate.
+                let scorer = HarmonicScorer(detector: detector)
+                let contrast = scorer.detect(in: gateTuning, referenceA: 440)?.contrast ?? 0
+                let standsOut = contrast >= HarmonicScorer.minimumContrast
+                noiseGate.update(rms: result.rms, dt: Double(hop) / sampleRate,
+                                 instrumentPresent: standsOut)
                 result.hasPitch = stability.admit(frequency: result.frequency,
-                                                  voiced: result.hasPitch && above)
+                                                  voiced: result.hasPitch && standsOut)
             }
             if let smoother, result.hasPitch {
                 result.frequency = smoother.process(hz: result.frequency,
@@ -79,6 +84,23 @@ enum Harness {
             out[n] = Float(value * level * envelope)
         }
         return out
+    }
+
+    /// An unplugged electric as a phone hears it: very quiet, essentially no
+    /// fundamental, energy concentrated in the upper partials.
+    ///
+    /// A solid body has no soundboard and no air cavity, so the only radiator is
+    /// the string — and a string is a dipole whose efficiency collapses when its
+    /// length is a fraction of a wavelength. Low E at 82 Hz has a 4-metre
+    /// wavelength against a 65 cm string. What reaches the microphone is 20–30 dB
+    /// down on an acoustic and decays from there.
+    static func unpluggedElectric(fundamental: Double, sampleRate: Double,
+                                  seconds: Double, level: Double = 0.003,
+                                  seed: UInt64 = 7) -> [Float] {
+        tone(fundamental: fundamental,
+             amplitudes: [0.03, 0.35, 0.85, 1.0, 0.80, 0.62, 0.45, 0.30],
+             sampleRate: sampleRate, seconds: seconds,
+             phases: nil, decay: 2.5, level: level)
     }
 
     static func sine(_ frequency: Double, sampleRate: Double, seconds: Double,

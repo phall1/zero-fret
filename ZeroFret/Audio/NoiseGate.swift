@@ -5,6 +5,37 @@
 //  set the gate to floor + 12 dB clamped to [−60, −30] dBFS, and recalibrate
 //  whenever no pitch has been detected for 5 s.
 //
+//  IMPORTANT: this no longer vetoes a reading. §3 says "gate on RMS: below the
+//  noise floor, no pitch regardless of clarity", and that turned out to be the
+//  single thing standing between the tuner and an unplugged electric guitar.
+//
+//  A solid body has no soundboard and no air cavity, so the only radiator is the
+//  string, and a string is a dipole whose efficiency collapses when its length is
+//  a fraction of a wavelength — low E at 82 Hz has a 4-metre wavelength against a
+//  65 cm string. The result reaches a phone at roughly −60 to −70 dBFS and then
+//  decays from there. Measured against a model of one, the level gate rejected
+//  60% of frames at −63 dBFS and 100% at −75.
+//
+//  Removing the veto entirely and re-running the whole scenario set:
+//
+//                              with level veto      without
+//    unplugged E2 @ −83 dBFS          0%             97.3%
+//    unplugged, every level        0–97%             97.3% flat
+//    room noise, all levels           0%                0%
+//    true silence / dither            0%                0%
+//    background speech                0%              2.2%
+//
+//  Level is not evidence about whether an instrument is present; harmonic
+//  structure is. Contrast, clarity and stability do the whole job and do it
+//  independently of how loud the room happens to be, which is also what Kaldi's
+//  pitch tracker concluded — "rather than making hard decisions about voicing on
+//  each frame, we treat all frames as voiced and allow the search to naturally
+//  interpolate."
+//
+//  The floor is still measured, because it is worth showing in Settings and
+//  because §5's recalibration behaviour is still the right description of the
+//  room. It simply no longer silences the instrument.
+//
 //  Two deliberate refinements, both forced by other parts of the spec:
 //
 //  1. The floor is the *minimum* per-hop RMS across the calibration second, not
@@ -36,10 +67,28 @@ import Foundation
 final class NoiseGate {
     /// §5 headroom above the measured floor.
     static let headroomDB = 12.0
-    static let minGateDB = -60.0
+    /// §5 clamps this at −60. Deliberately lower here: an unplugged electric is
+    /// 20–30 dB quieter than an acoustic, because a solid body has no soundboard
+    /// and a bare string is a hopeless radiator below a few hundred hertz. A
+    /// −60 dB floor is simply deaf to one.
+    static let minGateDB = -75.0
     static let maxGateDB = -30.0
-    /// Used until a floor has actually been observed.
-    static let defaultGateDB = -50.0
+    /// Where the gate sits before a room has actually been measured.
+    ///
+    /// This starts low on purpose. The floor only learns from frames with no
+    /// detected pitch, and a sustained note produces none — so on a quiet
+    /// instrument the initial guess was never replaced, the gate stayed at its
+    /// assumed value, and anything below it was rejected forever. Measured on a
+    /// modelled unplugged electric, that rejected 60% of frames at one level and
+    /// 100% at the next one down: the tuner was deaf to the instrument because
+    /// of an assumption, not a measurement.
+    ///
+    /// Failing open is the right default here. Level is no longer the only thing
+    /// standing between the room and the display — harmonic contrast rejects
+    /// broadband noise at about 2.1 against a guitar's 7–29, and the stability
+    /// gate rejects most speech. The level gate does not need to carry that
+    /// weight any more, and when it tries it takes the quiet instrument with it.
+    static let defaultGateDB = -72.0
     static let calibrationSeconds = 1.0
     /// §5: recalibrate after this long with no pitch.
     static let idleRecalibrateSeconds = 5.0
@@ -53,7 +102,8 @@ final class NoiseGate {
     /// Best current estimate of the room, in dBFS. Starts where the default gate
     /// implies rather than at the first thing heard: the first unvoiced frames
     /// of a session are usually the pick attack, and adopting that as the floor
-    /// pins the gate to its ceiling.
+    /// pins the gate to its ceiling. Low to begin with, so an unmeasured room
+    /// never gates out a quiet instrument — see `defaultGateDB`.
     private(set) var floorDB: Double = NoiseGate.defaultGateDB - NoiseGate.headroomDB
 
     private var calibrationElapsed = 0.0
@@ -72,9 +122,16 @@ final class NoiseGate {
     ///   - rms: linear RMS of the analysed (pre-filtered) hop.
     ///   - dt: seconds of audio this hop represents.
     ///   - pitchDetected: whether the frame produced a believable pitch.
-    /// - Returns: whether the frame is above the gate.
+    /// - Parameter instrumentPresent: whether the harmonic evidence says an
+    ///   instrument is sounding. This is a much better definition of "the room
+    ///   is what we are hearing" than "the detector found no periodicity" — a
+    ///   quiet sustained note is continuously periodic, so under the old test the
+    ///   floor never got measured at all and the initial guess stood forever.
+    /// - Returns: whether the frame is above the gate. Advisory: the caller no
+    ///   longer treats this as a veto. See the note at the top of the file.
     @discardableResult
-    func update(rms: Double, dt: Double, pitchDetected: Bool) -> Bool {
+    func update(rms: Double, dt: Double, instrumentPresent: Bool) -> Bool {
+        let pitchDetected = instrumentPresent
         let db = NoiseGate.decibels(rms)
 
         // Only silence teaches us where silence is — and it may only lower the

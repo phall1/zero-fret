@@ -78,15 +78,35 @@ Four things gate a reading, multiplicatively, because no single one is enough:
 
 - **Directional pickup.** A cardioid polar pattern where the device offers one,
   which attenuates a television across the room before a sample is captured.
-- **Level**, against a floor learned *only* from frames with no detected pitch.
-  Measuring it regardless of what is playing makes a ringing note its own floor,
-  and the gate then mutes the note as it decays.
+- **Level** — measured, and deliberately *not* a veto. See below.
 - **Contrast** — how far the best-fitting string stands out from frequencies
   that are not strings at all. A real note makes a sharp peak; broadband noise
   raises every hypothesis equally. Measured medians: guitar 7.2–28.9, background
   speech 4.3–5.6, room noise 2.1.
 - **Pitch stability**, because a plucked string settles and stays put while
   speech glides.
+
+Level deliberately is *not* among them either, which is the correction that
+made the tuner work on an unplugged electric. A solid body has no soundboard and
+no air cavity, so the only radiator is the string, and a string is a dipole
+whose efficiency collapses when its length is a fraction of a wavelength — low E
+at 82 Hz has a 4-metre wavelength against a 65 cm string. What reaches a phone is
+20–30 dB down on an acoustic and decays from there. The level gate rejected 60%
+of those frames at −63 dBFS and 100% at −75, and removing it entirely costs
+nothing:
+
+|                            | with level veto | without |
+|----------------------------|-----------------|---------|
+| unplugged E2 at −83 dBFS   | 0%              | 97.3%   |
+| room noise, all levels     | 0%              | 0%      |
+| true silence / dither      | 0%              | 0%      |
+
+Level is not evidence about whether an instrument is present; harmonic structure
+is. The floor is still measured — it is worth showing in Settings — and it now
+learns from frames where the *harmonic evidence* says no instrument, rather than
+from frames where the detector found no periodicity. A quiet sustained note is
+continuously periodic, so under the old test the floor was never measured at all
+and an initial guess silenced the instrument forever.
 
 Clarity deliberately is *not* among them. Measured through a modelled phone
 microphone, background speech scores 0.994 against a plucked string's 0.921 — a
