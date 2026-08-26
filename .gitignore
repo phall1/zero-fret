@@ -33,3 +33,7 @@ build/DerivedData/
 
 # Local signing identity — never tracked (see Config/Signing.example.xcconfig)
 Config/Signing.xcconfig
+
+# Python
+__pycache__/
+*.pyc

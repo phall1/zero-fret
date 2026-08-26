@@ -88,7 +88,16 @@ under `$TMPDIR`. `Scripts/archive.sh` pins `/usr/bin` first on PATH to avoid it.
 a distribution certificate on demand, and an App Manager key gets
 `Cloud signing permission error`. Since a distribution certificate already exists
 locally, the script exports with `signingStyle=manual` against a named profile
-instead — set `EXPORT_PROFILE` (already wired up).
+instead. `EXPORT_PROFILE` and `EXPORT_CERT` live in `.env.asc` alongside the API
+key — put them there rather than exporting them in a shell, or the next release
+fails with `No profiles for 'dev.phux.zerofret' were found` and the reason is
+gone with the session that set them. List the profiles you have with:
+
+```sh
+for f in ~/Library/Developer/Xcode/UserData/Provisioning\ Profiles/*.mobileprovision; do
+  security cms -D -i "$f" | plutil -extract Name raw -
+done
+```
 
 **The private key is only downloadable once.** If `AuthKey_*.p8` is ever lost,
 the key is dead — revoke it and generate a new one. There is no re-download.
