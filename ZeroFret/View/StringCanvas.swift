@@ -73,9 +73,13 @@ struct StringCanvas: View {
     /// The amplitude still says how far out the note is, so no information is
     /// lost — only the motion.
     var reduceMotion: Bool = false
+    /// Full-scale deflection, in points. Landscape has a fraction of the height
+    /// to work with and the string still has to be the widest thing on screen,
+    /// so the swing shrinks rather than the span.
+    var maxAmplitude: CGFloat = StringCanvas.maxAmplitude
 
     private var amplitude: CGFloat {
-        Self.maxAmplitude * CGFloat(min(abs(cents) / Self.fullScaleCents, 1))
+        maxAmplitude * CGFloat(min(abs(cents) / Self.fullScaleCents, 1))
     }
 
     /// How far the sweep has smeared, 0…1.
@@ -155,7 +159,7 @@ struct StringCanvas: View {
                 }
             }
         }
-        .frame(height: Self.maxAmplitude * 2 + 28)
+        .frame(height: maxAmplitude * 2 + 28)
         .accessibilityHidden(true)
     }
 

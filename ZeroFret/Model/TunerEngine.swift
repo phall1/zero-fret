@@ -108,6 +108,17 @@ final class TunerEngine {
         didSet {
             Defaults.hapticsEnabled = hapticsEnabled
             tick.isEnabled = hapticsEnabled
+        beatHaptics.isEnabled = beatHapticsEnabled
+        }
+    }
+
+    /// Tap once per beat against the target, so the instrument can be tuned
+    /// without looking at the screen. Off by default: it is a real change to
+    /// what the app does in the hand, and that should be asked for.
+    var beatHapticsEnabled: Bool = Defaults.beatHapticsEnabled {
+        didSet {
+            Defaults.beatHapticsEnabled = beatHapticsEnabled
+            beatHaptics.isEnabled = beatHapticsEnabled
         }
     }
 
@@ -147,6 +158,7 @@ final class TunerEngine {
     private var worker: DetectionWorker?
     private let assigner = StringAssigner()
     private let tick = TrueTick()
+    private let beatHaptics = BeatHaptics()
 
     private let proxy = DisplayLinkProxy()
     // `nonisolated(unsafe)` so `deinit`, which is nonisolated, can invalidate it.
@@ -347,7 +359,11 @@ final class TunerEngine {
         }
 
         // §0.3 / §6: integrate, never evaluate from absolute time.
-        wobble.advance(beatHz: next.beatHz, dt: dt)
+        let beat = wobble.advance(beatHz: next.beatHz, dt: dt)
+        // The felt beat and the seen beat are the same cycle of the same
+        // oscillator, so they can never disagree about where the note is.
+        beatHaptics.update(beat: beat, beatHz: next.beatHz,
+                           hasPitch: next.hasPitch && !next.isHeld, now: now)
 
         // Only on a real change. `display` no longer carries anything that moves
         // every frame, so in silence this assigns nothing at all.
@@ -492,6 +508,7 @@ private enum Defaults {
         static let tolerance = "zf.toleranceCents"
         static let response = "zf.responseMode"
         static let haptics = "zf.hapticsEnabled"
+        static let beatHaptics = "zf.beatHapticsEnabled"
         static let tuning = "zf.tuningID"
     }
 
@@ -523,6 +540,12 @@ private enum Defaults {
     static var hapticsEnabled: Bool {
         get { store.object(forKey: Key.haptics) as? Bool ?? true }
         set { store.set(newValue, forKey: Key.haptics) }
+    }
+
+    /// Off unless asked for: it changes what the app does in the hand.
+    static var beatHapticsEnabled: Bool {
+        get { store.object(forKey: Key.beatHaptics) as? Bool ?? false }
+        set { store.set(newValue, forKey: Key.beatHaptics) }
     }
 
     static var tuning: Tuning {

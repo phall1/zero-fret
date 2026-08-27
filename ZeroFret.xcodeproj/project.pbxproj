@@ -29,6 +29,7 @@
 		887C9AFB1C3878A77DAD3B50 /* TuningSheet.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2E7F4E03BF73B89477ACD54C /* TuningSheet.swift */; };
 		4BD1620640D408BDE048719A /* SettingsView.swift in Sources */ = {isa = PBXBuildFile; fileRef = EF1D2C271BFAA6BC6872C64D /* SettingsView.swift */; };
 		2FB173E80381FB6ACB6AAE04 /* TrueTick.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE1B96165915B017BE7CA91B /* TrueTick.swift */; };
+		E557477471A4A2BDBF55002F /* BeatHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E86859C6DF7E5C0612986CA /* BeatHaptics.swift */; };
 		721AC80443DCE03FBC65BE01 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1466E1023C997038016907D1 /* Assets.xcassets */; };
 		E26D50F66BB1171D2AB7839D /* RingBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95A04407A6E98DEAE6CF2EC4 /* RingBuffer.swift */; };
 		58A1EA2868DE213CE5E06DC5 /* Biquad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87C4767F12944DFA7BEE6E9B /* Biquad.swift */; };
@@ -71,6 +72,7 @@
 		5B723272C286BFAA306F34E7 /* Smoother.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = Smoother.swift; sourceTree = "<group>"; };
 		D2344FA0C5111C86D9816763 /* SyntheticInput.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = SyntheticInput.swift; sourceTree = "<group>"; };
 		62D151065D240E9A14AB18BB /* TargetTracker.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TargetTracker.swift; sourceTree = "<group>"; };
+		8E86859C6DF7E5C0612986CA /* BeatHaptics.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BeatHaptics.swift; sourceTree = "<group>"; };
 		DE1B96165915B017BE7CA91B /* TrueTick.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TrueTick.swift; sourceTree = "<group>"; };
 		533A60FA54815C50565EF4AF /* StringAssigner.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = StringAssigner.swift; sourceTree = "<group>"; };
 		99363D9CDC66EDD1B80E0DC9 /* TunerEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TunerEngine.swift; sourceTree = "<group>"; };
@@ -184,6 +186,7 @@
 		709C15BC3FA1E9CD3FE98A8F /* Haptics */ = {
 			isa = PBXGroup;
 			children = (
+				8E86859C6DF7E5C0612986CA /* BeatHaptics.swift */,
 				DE1B96165915B017BE7CA91B /* TrueTick.swift */,
 			);
 			path = Haptics;
@@ -423,6 +426,7 @@
 				887C9AFB1C3878A77DAD3B50 /* TuningSheet.swift in Sources */,
 				4BD1620640D408BDE048719A /* SettingsView.swift in Sources */,
 				2FB173E80381FB6ACB6AAE04 /* TrueTick.swift in Sources */,
+				E557477471A4A2BDBF55002F /* BeatHaptics.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};

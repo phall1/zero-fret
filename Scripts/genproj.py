@@ -41,6 +41,7 @@ app_sources = [
     "ZeroFret/View/TuningSheet.swift",
     "ZeroFret/View/SettingsView.swift",
     "ZeroFret/Haptics/TrueTick.swift",
+    "ZeroFret/Haptics/BeatHaptics.swift",
 ]
 app_resources = ["ZeroFret/Assets.xcassets"]
 app_other = ["ZeroFret/App/Info.plist",

@@ -150,7 +150,7 @@ struct TunerView: View {
             .accessibilityLabel("Settings")
         }
         .padding(.horizontal, 20)
-        .padding(.vertical, 10)
+        .padding(.vertical, isLandscape ? 6 : 10)
     }
 
     private var referenceLabel: String {
@@ -181,16 +181,23 @@ struct TunerView: View {
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
+    // Landscape is not a narrower portrait, and it was being treated as one —
+    // the glyph and readout stacked in a fixed 240pt column with the string
+    // squeezed into whatever was left. But a string's natural orientation is
+    // exactly this one, and a phone is turned sideways precisely so the thing
+    // being watched can be wide. So the string spans the whole screen and
+    // everything else compresses around it.
     private var landscapeStage: some View {
-        HStack(spacing: 28) {
-            VStack(spacing: 10) {
-                noteGlyph
-                readoutBlock
-            }
-            .frame(maxWidth: 240)
+        VStack(spacing: 0) {
+            Spacer(minLength: 0)
+            noteGlyph
+            Spacer().frame(height: 8)
             string
+                .padding(.horizontal, 10)
+            Spacer().frame(height: 6)
+            readoutBlock
+            Spacer(minLength: 0)
         }
-        .padding(.horizontal, 20)
         .frame(maxWidth: .infinity, maxHeight: .infinity)
     }
 
@@ -206,14 +213,16 @@ struct TunerView: View {
         VStack(spacing: 2) {
             HStack(alignment: .firstTextBaseline, spacing: 2) {
                 Text(engine.display.hasPitch ? engine.display.noteName : "—")
-                    .font(.system(size: isLandscape ? glyphSize * 0.69 : glyphSize,
+                    .font(.system(size: isLandscape ? glyphSize * 0.60 : glyphSize,
                                   weight: .thin, design: .rounded))
                 Text(engine.display.hasPitch ? "\(engine.display.octave)" : "")
-                    .font(.system(size: isLandscape ? octaveSize * 0.74 : octaveSize,
+                    .font(.system(size: isLandscape ? octaveSize * 0.66 : octaveSize,
                                   weight: .light, design: .rounded))
                     .baselineOffset(isLandscape ? 12 : 18)
                     .foregroundStyle(accent.opacity(0.55))
             }
+            .lineLimit(1)
+            .minimumScaleFactor(0.5)
             .foregroundStyle(engine.display.hasPitch ? accent : Theme.faint)
             .shadow(color: shouldGlow ? accent.opacity(0.55) : .clear, radius: 11)
             .contentTransition(.numericText())
@@ -277,7 +286,8 @@ struct TunerView: View {
                      color: accent,
                      gauge: gauge,
                      arrival: arrival,
-                     reduceMotion: reduceMotion)
+                     reduceMotion: reduceMotion,
+                     maxAmplitude: isLandscape ? 22 : 46)
             .opacity(coastOpacity)
             .animation(.easeOut(duration: 0.18), value: engine.display.isHeld)
     }
@@ -287,14 +297,16 @@ struct TunerView: View {
             // Fixed-width field sized to −00.0¢ with monospaced digits. §6:
             // proportional digits make the whole block shimmer at 47 updates/s.
             Text(engine.display.centsText)
-                .font(.system(size: isLandscape ? readoutSize * 0.77 : readoutSize,
+                .font(.system(size: isLandscape ? readoutSize * 0.70 : readoutSize,
                               weight: .light, design: .rounded).monospacedDigit())
-                .frame(minWidth: isLandscape ? readoutSize * 3.4 : readoutSize * 3.4, alignment: .trailing)
+                .frame(minWidth: isLandscape ? readoutSize * 2.9 : readoutSize * 3.4, alignment: .trailing)
             Text("¢")
-                .font(.system(size: (isLandscape ? readoutSize * 0.77 : readoutSize) * 0.55,
+                .font(.system(size: (isLandscape ? readoutSize * 0.70 : readoutSize) * 0.55,
                           weight: .light, design: .rounded))
                 .foregroundStyle(accent.opacity(0.5))
         }
+        .lineLimit(1)
+        .minimumScaleFactor(0.5)
         .foregroundStyle(engine.display.hasPitch ? accent : Theme.faint)
         .shadow(color: shouldGlow ? accent.opacity(0.45) : .clear, radius: 11)
         .opacity(coastOpacity)
@@ -311,6 +323,8 @@ struct TunerView: View {
                 .tracking(0.6)
                 .foregroundStyle(engine.display.hasPitch ? accent.opacity(0.75) : Theme.faint)
                 .textCase(.uppercase)
+                .lineLimit(1)
+                .minimumScaleFactor(0.6)
                 // Deliberately no `contentTransition`. It cross-dissolves the
                 // two strings *in place*, so mid-transition "TOO SLACK ·
                 // TIGHTEN" and "IN TUNE" are both painted over each other and

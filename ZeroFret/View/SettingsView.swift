@@ -69,10 +69,14 @@ struct SettingsView: View {
                         .tint(Theme.trueTone)
                     Toggle("Haptic tick", isOn: $engine.hapticsEnabled)
                         .tint(Theme.trueTone)
+                    Toggle("Feel the beat", isOn: $engine.beatHapticsEnabled)
+                        .tint(Theme.trueTone)
+                        .accessibilityIdentifier("beatHapticsToggle")
+                        .accessibilityHint("Taps once per beat against the target so you can tune without looking at the screen")
                 } header: {
                     Text("Tolerance")
                 } footer: {
-                    Text("One tick when the note crosses into the band. It will not tick again until the note has drifted past ±\(Int(engine.toleranceCents * 3))¢.")
+                    Text("One tick when the note crosses into the band. It will not tick again until the note has drifted past ±\(Int(engine.toleranceCents * 3))¢.\n\nFeel the beat taps once per beat against the target, so the pulses slow as the note comes in and stop when it arrives — the same thing the string does, in the one channel left free while both hands are on the pegs. It is how the instrument was tuned before there were tuners.")
                 }
                 .listRowBackground(Theme.stageRaised)
 

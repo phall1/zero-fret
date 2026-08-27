@@ -104,11 +104,16 @@ final class WobblePhase {
     /// §0.3: integrate. Never evaluate from absolute time — the beat frequency
     /// moves every frame while somebody is tuning, and recomputing makes the
     /// string snap each time it does.
-    func advance(beatHz: Double, dt: Double) {
+    /// - Returns: true on the frame the phase completed a cycle, which is one
+    ///   beat against the target. Anything that wants to mark beats — a haptic,
+    ///   a tone — takes them from here rather than deriving its own, so it is
+    ///   physically impossible for what is felt to disagree with what is seen.
+    @discardableResult
+    func advance(beatHz: Double, dt: Double) -> Bool {
         value += 2 * .pi * beatHz * dt
-        if value >= 2 * .pi {
-            value = value.truncatingRemainder(dividingBy: 2 * .pi)
-        }
+        guard value >= 2 * .pi else { return false }
+        value = value.truncatingRemainder(dividingBy: 2 * .pi)
+        return true
     }
 
     func reset() { value = 0 }
