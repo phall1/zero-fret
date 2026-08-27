@@ -232,6 +232,15 @@ final class TunerEngine {
         // there would rebuild the detector, re-prime the smoother and re-run the
         // 1 s gate calibration while a note is ringing.
         guard !isRunning else { return }
+        // A genuine return from the background is a new tuning session, so what
+        // was in tune last time is no longer something this app can claim to
+        // know. Everything else here only ever shows what it can currently
+        // measure — the coasting window is bounded at half a second precisely
+        // because a reading older than that is a lie rather than a kindness —
+        // and remembered strings have to answer to the same rule. Control
+        // Centre and notification banners do not reach here, so putting the
+        // phone down mid-tune is what clears it, not glancing at a banner.
+        forgetTunedStrings()
         startEverything()
     }
 
@@ -470,6 +479,13 @@ final class TunerEngine {
     /// genuinely untuned, using §7's re-arm threshold rather than a second
     /// number: the same distance that earns another haptic tick is the same
     /// distance that stops counting as done, so the two can never disagree.
+    ///
+    /// And the whole set is forgotten when the targets move — a new tuning, a
+    /// new reference pitch — or when the app comes back from the background,
+    /// which is the boundary of a tuning session. Without that last one this is
+    /// the only thing in the app that can go stale without limit: a peg bumped
+    /// ten minutes ago leaves a chip still claiming to be in tune, and the app
+    /// has no way to know because it is not listening to that string any more.
     private(set) var tunedStrings: Set<Int> = []
 
     private func noteSettled(on stringIndex: Int?, cents: Double) {
