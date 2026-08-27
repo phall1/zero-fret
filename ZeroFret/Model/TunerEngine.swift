@@ -80,6 +80,9 @@ final class TunerEngine {
             storedReferenceA = clamped
             Defaults.referenceA = clamped
             worker?.setTargets(tuning.midiNotes, referenceA: clamped)
+            // Every target just moved, so nothing that was in tune against the
+            // old reference can still be claimed as done.
+            forgetTunedStrings()
         }
     }
 
@@ -115,6 +118,7 @@ final class TunerEngine {
             pinnedString = nil
             assigner.reset()
             tick.rearm()
+            forgetTunedStrings()
             // Drop the held reading. Without this the 250 ms hold keeps
             // rendering the previous tuning's target — including a stringIndex
             // that may not exist in the new tuning, so no chip matches.
@@ -329,6 +333,7 @@ final class TunerEngine {
             next.isChromaticFallback = heldTarget.stringIndex == nil
             next.direction = TuneDirection.from(cents: cents, tolerance: toleranceCents)
             next.isHeld = heldIsCoasting
+            noteSettled(on: heldTarget.stringIndex, cents: cents)
         } else {
             next.hasPitch = false
             next.frequency = 0
@@ -434,6 +439,41 @@ final class TunerEngine {
         guard display.hasPitch, display.frequency > 0 else { return nil }
         return MusicMath.cents(measured: display.frequency,
                                target: targetFrequency(for: string))
+    }
+
+    // MARK: - What is already done
+
+    /// Strings that have been brought into tune and not since drifted off.
+    ///
+    /// A tuner measures one string; a guitarist tunes six, and until now the app
+    /// had no idea which of the two it was helping with. Nothing here changes a
+    /// reading — it only remembers, so the row of chips can answer "which ones
+    /// have I done?" without the player holding it in their head.
+    ///
+    /// A string is forgotten again the moment it reads far enough out to be
+    /// genuinely untuned, using §7's re-arm threshold rather than a second
+    /// number: the same distance that earns another haptic tick is the same
+    /// distance that stops counting as done, so the two can never disagree.
+    private(set) var tunedStrings: Set<Int> = []
+
+    private func noteSettled(on stringIndex: Int?, cents: Double) {
+        guard let stringIndex else { return }
+        let magnitude = abs(cents)
+        if magnitude <= toleranceCents {
+            // Only a freshly measured frame may mark a string done. Coasting
+            // republishes the last reading, so without this a note that decayed
+            // while in tune would keep re-marking itself.
+            guard !heldIsCoasting else { return }
+            if !tunedStrings.contains(stringIndex) { tunedStrings.insert(stringIndex) }
+        } else if magnitude > toleranceCents * TrueTick.rearmMultiplier {
+            if tunedStrings.contains(stringIndex) { tunedStrings.remove(stringIndex) }
+        }
+    }
+
+    /// Everything the set was measured against has moved.
+    private func forgetTunedStrings() {
+        guard !tunedStrings.isEmpty else { return }
+        tunedStrings.removeAll()
     }
 
     func openSettings() {
