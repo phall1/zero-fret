@@ -314,58 +314,9 @@ final class TunerEngine {
         let now = CACurrentMediaTime()
         let dt = max(link.targetTimestamp - link.timestamp, 1.0 / 240.0)
 
-        var next = display
-
-        if let snapshot = worker?.snapshots.latest() {
-            // Diagnostics move on every hop even in silence, so they are
-            // republished on their own slow clock rather than dragging the
-            // Settings list along at 47 Hz.
-            if now - lastSignalPublish >= TunerEngine.signalRefreshInterval {
-                lastSignalPublish = now
-                let updated = SignalState(rmsDB: snapshot.rmsDB,
-                                          gateDB: snapshot.gateDB,
-                                          sampleRate: snapshot.sampleRate,
-                                          windowSize: snapshot.windowSize,
-                                          clarity: snapshot.clarity,
-                                          contrast: snapshot.contrast)
-                if updated != signal { signal = updated }
-            }
-
-            if snapshot.sequence != lastSequence {
-                lastSequence = snapshot.sequence
-                consume(snapshot, now: now)
-            }
-        }
-
-        let holding = now - lastValidTime <= TunerEngine.holdSeconds
-        if holding, heldFrequency > 0 {
-            let targetHz = MusicMath.frequency(midi: Double(heldTarget.midi), referenceA: referenceA)
-            let cents = MusicMath.cents(measured: heldFrequency, target: targetHz)
-            let beat = MusicMath.beatHz(measured: heldFrequency, target: targetHz)
-
-            next.hasPitch = true
-            next.frequency = heldFrequency
-            next.cents = cents
-            next.beatHz = min(beat, TunerEngine.maxDisplayBeatHz)
-            next.targetMIDI = heldTarget.midi
-            next.noteName = MusicMath.noteName(midi: heldTarget.midi)
-            next.octave = MusicMath.octave(midi: heldTarget.midi)
-            next.stringIndex = heldTarget.stringIndex
-            next.isChromaticFallback = heldTarget.stringIndex == nil
-            next.direction = TuneDirection.from(cents: cents, tolerance: toleranceCents)
-            next.isHeld = heldIsCoasting
-            noteSettled(on: heldTarget.stringIndex, cents: cents)
-        } else {
-            next.hasPitch = false
-            next.frequency = 0
-            next.cents = 0
-            next.beatHz = 0
-            next.stringIndex = nil
-            next.isChromaticFallback = false
-            next.direction = .inTune
-            next.noteName = "—"
-            next.isHeld = false
-        }
+        drainWorker(now: now)
+        let next = nextDisplay(now: now)
+        noteSettled(on: next.stringIndex, cents: next.cents, measured: next.hasPitch)
 
         // §0.3 / §6: integrate, never evaluate from absolute time.
         let beat = wobble.advance(beatHz: next.beatHz, dt: dt)
@@ -379,6 +330,70 @@ final class TunerEngine {
         if next != display { display = next }
 
         updateIdleTimer(now: now, pitchPresent: next.hasPitch)
+    }
+
+    /// Takes whatever the detection queue has published since the last frame.
+    private func drainWorker(now: Double) {
+        guard let snapshot = worker?.snapshots.latest() else { return }
+        publishDiagnostics(snapshot, now: now)
+        guard snapshot.sequence != lastSequence else { return }
+        lastSequence = snapshot.sequence
+        consume(snapshot, now: now)
+    }
+
+    /// Diagnostics move on every hop even in dead silence, so they are
+    /// republished on their own slow clock rather than dragging the Settings
+    /// list — sliders and pickers included — along at 47 Hz under a finger.
+    private func publishDiagnostics(_ snapshot: DetectionSnapshot, now: Double) {
+        guard now - lastSignalPublish >= TunerEngine.signalRefreshInterval else { return }
+        lastSignalPublish = now
+        let updated = SignalState(rmsDB: snapshot.rmsDB,
+                                  gateDB: snapshot.gateDB,
+                                  sampleRate: snapshot.sampleRate,
+                                  windowSize: snapshot.windowSize,
+                                  clarity: snapshot.clarity,
+                                  contrast: snapshot.contrast)
+        if updated != signal { signal = updated }
+    }
+
+    /// The stage for this frame: the last accepted reading for as long as §3's
+    /// hold is still running, and a blank one once it has expired.
+    ///
+    /// Built by mutating the current display rather than from a fresh value, so
+    /// the fields the blank case does not speak for — the target note and its
+    /// octave, neither of which is read while `hasPitch` is false — keep what
+    /// they had and do not count as a change worth republishing.
+    private func nextDisplay(now: Double) -> DisplayState {
+        var next = display
+        guard now - lastValidTime <= TunerEngine.holdSeconds, heldFrequency > 0 else {
+            next.hasPitch = false
+            next.frequency = 0
+            next.cents = 0
+            next.beatHz = 0
+            next.stringIndex = nil
+            next.isChromaticFallback = false
+            next.direction = .inTune
+            next.noteName = "—"
+            next.isHeld = false
+            return next
+        }
+
+        let targetHz = MusicMath.frequency(midi: Double(heldTarget.midi), referenceA: referenceA)
+        let cents = MusicMath.cents(measured: heldFrequency, target: targetHz)
+        let beat = MusicMath.beatHz(measured: heldFrequency, target: targetHz)
+
+        next.hasPitch = true
+        next.frequency = heldFrequency
+        next.cents = cents
+        next.beatHz = min(beat, TunerEngine.maxDisplayBeatHz)
+        next.targetMIDI = heldTarget.midi
+        next.noteName = MusicMath.noteName(midi: heldTarget.midi)
+        next.octave = MusicMath.octave(midi: heldTarget.midi)
+        next.stringIndex = heldTarget.stringIndex
+        next.isChromaticFallback = heldTarget.stringIndex == nil
+        next.direction = TuneDirection.from(cents: cents, tolerance: toleranceCents)
+        next.isHeld = heldIsCoasting
+        return next
     }
 
     private func consume(_ snapshot: DetectionSnapshot, now: Double) {
@@ -488,14 +503,21 @@ final class TunerEngine {
     /// has no way to know because it is not listening to that string any more.
     private(set) var tunedStrings: Set<Int> = []
 
-    private func noteSettled(on stringIndex: Int?, cents: Double) {
-        guard let stringIndex else { return }
+    /// - Parameter measured: false when there is no reading at all this frame,
+    ///   so a blank display cannot retract what an earlier one established.
+    private func noteSettled(on stringIndex: Int?, cents: Double, measured: Bool) {
+        guard measured, let stringIndex else { return }
         let magnitude = abs(cents)
         if magnitude <= toleranceCents {
             // Only a freshly measured frame may mark a string done. Coasting
             // republishes the last reading, so without this a note that decayed
             // while in tune would keep re-marking itself.
             guard !heldIsCoasting else { return }
+            // Checked before mutating, not for speed: `tunedStrings` is
+            // observed, and a mutating call on it reports a change whether or
+            // not the value moved. Inserting a member that is already there
+            // would invalidate the chip row on every frame a string sits in
+            // tune, which is exactly the case this feature exists for.
             if !tunedStrings.contains(stringIndex) { tunedStrings.insert(stringIndex) }
         } else if magnitude > toleranceCents * TrueTick.rearmMultiplier {
             if tunedStrings.contains(stringIndex) { tunedStrings.remove(stringIndex) }

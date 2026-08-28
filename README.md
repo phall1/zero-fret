@@ -182,6 +182,40 @@ from absolute time. The beat frequency changes every frame while somebody is
 tuning, and `sin(2π · beat · t)` snaps every time it does — a bug that reads as a
 noisy detector when the detector is fine.
 
+**Blur is the error.** A string vibrating faster than the eye can follow does not
+read as a line in a position; it reads as the blurred lens of everywhere it has
+just been. Because the wobble rate here *is* the beat frequency against the
+target, that perceptual fact lands exactly on the meaning: a long way out beats
+fast and smears into a shape, and as it comes in the beat slows, the smear
+resolves, and at zero the string simply stops. There is no legend to learn — it
+is how every string a player has ever watched already behaves. Three layers, in
+the order the eye assembles them: the swept envelope, a few positions just left
+behind, then the string itself.
+
+**Tune without looking.** Tuning happens with both hands on the pegs and both
+eyes on the strings, and every tuner ever made still asks you to look at it. Turn
+on *Feel the beat* and the phone taps once per beat against the target, so the
+pulses slow as the note comes in and stop when it arrives.
+
+It is how the instrument was tuned before there were tuners: a piano technician
+does not read a number, they count beats and turn until the beating stops. This
+is that, without needing the trained ear — and for a blind musician it is not an
+enhancement, it is the interface.
+
+The taps are driven by `WobblePhase`'s wrap rather than by a rate of their own,
+so the haptic and the string are the same oscillator and cannot drift apart.
+Capped at eight beats a second, which is about where a technician stops counting
+and starts hearing a tone, and where a fingertip does the same. It scales the way
+it should without being told to: beat rate is proportional to frequency, so it
+engages within about 170 cents on a low E and about 40 on the high E.
+
+**Accessibility.** Type scales with the reader's setting — the stage is read at
+arm's length over the top of an instrument, which is exactly where a fixed 17 pt
+label is somebody else's decision about your eyesight, and the large figures
+scale to fit rather than pushing the layout apart. Reduce Motion holds the string
+at a static deflection: the amplitude still says how far out the note is, so
+nothing is lost but the movement.
+
 ## Running it on a phone
 
 ```sh
