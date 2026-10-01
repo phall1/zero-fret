@@ -45,7 +45,9 @@ app_sources = [
     "ZeroFret/Haptics/TrueTick.swift",
     "ZeroFret/Haptics/BeatHaptics.swift",
 ]
-app_resources = ["ZeroFret/Assets.xcassets"]
+# PrivacyInfo.xcprivacy is Apple's privacy manifest. UserDefaults is a
+# "required reason" API, so the app has to say why it uses it.
+app_resources = ["ZeroFret/Assets.xcassets", "ZeroFret/App/PrivacyInfo.xcprivacy"]
 app_other = ["ZeroFret/App/Info.plist",
              "ZeroFret/Support/ZFAtomics.h",
              "ZeroFret/Support/ZeroFret-Bridging-Header.h"]
@@ -85,6 +87,7 @@ test_sources = [
     "ZeroFretTests/AcceptanceTests.swift",
     "ZeroFretTests/TuningCollectionTests.swift",
     "ZeroFretTests/InstrumentTests.swift",
+    "ZeroFretTests/DisplayStateTests.swift",
 ]
 
 def ftype(path):
@@ -92,6 +95,7 @@ def ftype(path):
     if path.endswith(".h"): return "sourcecode.c.h"
     if path.endswith(".plist"): return "text.plist.xml"
     if path.endswith(".xcassets"): return "folder.assetcatalog"
+    if path.endswith(".xcprivacy"): return "text.xml"
     if path.endswith(".md"): return "net.daringfireball.markdown"
     if path.endswith(".xcconfig"): return "text.xcconfig"
     return "text"
@@ -173,7 +177,8 @@ def group(key, name, children, path=None):
 w("/* Begin PBXGroup section */")
 
 subgroups = {
-    "App": ["ZeroFret/App/ZeroFretApp.swift", "ZeroFret/App/Info.plist"],
+    "App": ["ZeroFret/App/ZeroFretApp.swift", "ZeroFret/App/Info.plist",
+            "ZeroFret/App/PrivacyInfo.xcprivacy"],
     "Audio": [p for p in app_sources if p.startswith("ZeroFret/Audio/")],
     "Model": [p for p in app_sources if p.startswith("ZeroFret/Model/")],
     "View": [p for p in app_sources if p.startswith("ZeroFret/View/")],
@@ -417,7 +422,7 @@ APP_COMMON = {
     "ASSETCATALOG_COMPILER_APPICON_NAME": "AppIcon",
     "ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME": "AccentColor",
     "CODE_SIGN_STYLE": "Automatic",
-    "CURRENT_PROJECT_VERSION": "1",
+    "CURRENT_PROJECT_VERSION": "10",
     "DEVELOPMENT_ASSET_PATHS": '""',
     "ENABLE_PREVIEWS": "YES",
     "GENERATE_INFOPLIST_FILE": "NO",
@@ -433,7 +438,7 @@ APP_COMMON = {
 TEST_COMMON = {
     "ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES": "YES",
     "CODE_SIGN_STYLE": "Automatic",
-    "CURRENT_PROJECT_VERSION": "1",
+    "CURRENT_PROJECT_VERSION": "10",
     "GENERATE_INFOPLIST_FILE": "YES",
     "MARKETING_VERSION": "1.1",
     "PRODUCT_BUNDLE_IDENTIFIER": BUNDLE + ".tests",
@@ -444,7 +449,7 @@ TEST_COMMON = {
 
 UITEST_COMMON = {
     "CODE_SIGN_STYLE": "Automatic",
-    "CURRENT_PROJECT_VERSION": "1",
+    "CURRENT_PROJECT_VERSION": "10",
     "GENERATE_INFOPLIST_FILE": "YES",
     "MARKETING_VERSION": "1.1",
     "PRODUCT_BUNDLE_IDENTIFIER": BUNDLE + ".uitests",

@@ -33,6 +33,7 @@
 		2FB173E80381FB6ACB6AAE04 /* TrueTick.swift in Sources */ = {isa = PBXBuildFile; fileRef = DE1B96165915B017BE7CA91B /* TrueTick.swift */; };
 		E557477471A4A2BDBF55002F /* BeatHaptics.swift in Sources */ = {isa = PBXBuildFile; fileRef = 8E86859C6DF7E5C0612986CA /* BeatHaptics.swift */; };
 		721AC80443DCE03FBC65BE01 /* Assets.xcassets in Resources */ = {isa = PBXBuildFile; fileRef = 1466E1023C997038016907D1 /* Assets.xcassets */; };
+		F3AB47549D007F00CD665DFD /* PrivacyInfo.xcprivacy in Resources */ = {isa = PBXBuildFile; fileRef = E430817365143AC8E0BDB030 /* PrivacyInfo.xcprivacy */; };
 		E26D50F66BB1171D2AB7839D /* RingBuffer.swift in Sources */ = {isa = PBXBuildFile; fileRef = 95A04407A6E98DEAE6CF2EC4 /* RingBuffer.swift */; };
 		58A1EA2868DE213CE5E06DC5 /* Biquad.swift in Sources */ = {isa = PBXBuildFile; fileRef = 87C4767F12944DFA7BEE6E9B /* Biquad.swift */; };
 		FBDACF4AB901F3B18B195A4E /* PitchDetector.swift in Sources */ = {isa = PBXBuildFile; fileRef = 60B68BEC2B348260DF12230D /* PitchDetector.swift */; };
@@ -59,11 +60,13 @@
 		DD982EA135731D8060606896 /* AcceptanceTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 7A7492A8B8E69713AEDE15BF /* AcceptanceTests.swift */; };
 		974A73D7CE181988F8E12FC2 /* TuningCollectionTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 2D4E79870129C8675BBE5868 /* TuningCollectionTests.swift */; };
 		6E88298CDABBB3BA68AB6F19 /* InstrumentTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = E6046F996A01A75428E4E9F8 /* InstrumentTests.swift */; };
+		7852EF56590CB2BAF1C09318 /* DisplayStateTests.swift in Sources */ = {isa = PBXBuildFile; fileRef = 4F203097A2C45F37730E0A1F /* DisplayStateTests.swift */; };
 		1DA7A1F4205219C0C9320732 /* TunerUITests.swift in Sources */ = {isa = PBXBuildFile; fileRef = C0AA5E9427576C016E152058 /* TunerUITests.swift */; };
 /* End PBXBuildFile section */
 
 /* Begin PBXFileReference section */
 		4989FE9F42EB12E5793A0930 /* Info.plist */ = {isa = PBXFileReference; lastKnownFileType = text.plist.xml; path = Info.plist; sourceTree = "<group>"; };
+		E430817365143AC8E0BDB030 /* PrivacyInfo.xcprivacy */ = {isa = PBXFileReference; lastKnownFileType = text.xml; path = PrivacyInfo.xcprivacy; sourceTree = "<group>"; };
 		8028F44BE6CC78B725EE7036 /* ZeroFretApp.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = ZeroFretApp.swift; sourceTree = "<group>"; };
 		1466E1023C997038016907D1 /* Assets.xcassets */ = {isa = PBXFileReference; lastKnownFileType = folder.assetcatalog; path = Assets.xcassets; sourceTree = "<group>"; };
 		7EB6226304D8C759D6C4ADFE /* AudioEngine.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AudioEngine.swift; sourceTree = "<group>"; };
@@ -94,6 +97,7 @@
 		2E7F4E03BF73B89477ACD54C /* TuningSheet.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = TuningSheet.swift; sourceTree = "<group>"; };
 		7A7492A8B8E69713AEDE15BF /* AcceptanceTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = AcceptanceTests.swift; sourceTree = "<group>"; };
 		1BF3D8D32A377639CF0C34FE /* BiquadTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = BiquadTests.swift; sourceTree = "<group>"; };
+		4F203097A2C45F37730E0A1F /* DisplayStateTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = DisplayStateTests.swift; sourceTree = "<group>"; };
 		89A53DEB0BE99966ABE1978B /* HarmonicScoreTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = HarmonicScoreTests.swift; sourceTree = "<group>"; };
 		E6046F996A01A75428E4E9F8 /* InstrumentTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = InstrumentTests.swift; sourceTree = "<group>"; };
 		5196AFDE3D8406B392D039EB /* MusicMathTests.swift */ = {isa = PBXFileReference; lastKnownFileType = sourcecode.swift; path = MusicMathTests.swift; sourceTree = "<group>"; };
@@ -146,6 +150,7 @@
 			isa = PBXGroup;
 			children = (
 				4989FE9F42EB12E5793A0930 /* Info.plist */,
+				E430817365143AC8E0BDB030 /* PrivacyInfo.xcprivacy */,
 				8028F44BE6CC78B725EE7036 /* ZeroFretApp.swift */,
 			);
 			path = App;
@@ -243,6 +248,7 @@
 				7A7492A8B8E69713AEDE15BF /* AcceptanceTests.swift */,
 				2D4E79870129C8675BBE5868 /* TuningCollectionTests.swift */,
 				E6046F996A01A75428E4E9F8 /* InstrumentTests.swift */,
+				4F203097A2C45F37730E0A1F /* DisplayStateTests.swift */,
 			);
 			path = ZeroFretTests;
 			sourceTree = "<group>";
@@ -407,6 +413,7 @@
 			buildActionMask = 2147483647;
 			files = (
 				721AC80443DCE03FBC65BE01 /* Assets.xcassets in Resources */,
+				F3AB47549D007F00CD665DFD /* PrivacyInfo.xcprivacy in Resources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -475,6 +482,7 @@
 				DD982EA135731D8060606896 /* AcceptanceTests.swift in Sources */,
 				974A73D7CE181988F8E12FC2 /* TuningCollectionTests.swift in Sources */,
 				6E88298CDABBB3BA68AB6F19 /* InstrumentTests.swift in Sources */,
+				7852EF56590CB2BAF1C09318 /* DisplayStateTests.swift in Sources */,
 			);
 			runOnlyForDeploymentPostprocessing = 0;
 		};
@@ -619,7 +627,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -644,7 +652,7 @@
 				ASSETCATALOG_COMPILER_APPICON_NAME = AppIcon;
 				ASSETCATALOG_COMPILER_GLOBAL_ACCENT_COLOR_NAME = AccentColor;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 10;
 				DEVELOPMENT_ASSET_PATHS = "";
 				ENABLE_PREVIEWS = YES;
 				GENERATE_INFOPLIST_FILE = NO;
@@ -668,7 +676,7 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 10;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.phux.zerofret.tests;
@@ -684,7 +692,7 @@
 			buildSettings = {
 				ALWAYS_EMBED_SWIFT_STANDARD_LIBRARIES = YES;
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 10;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.phux.zerofret.tests;
@@ -699,7 +707,7 @@
 			baseConfigurationReference = FAFDBD1F83DDA4B0A5F318A7 /* Base.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 10;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.phux.zerofret.uitests;
@@ -714,7 +722,7 @@
 			baseConfigurationReference = FAFDBD1F83DDA4B0A5F318A7 /* Base.xcconfig */;
 			buildSettings = {
 				CODE_SIGN_STYLE = Automatic;
-				CURRENT_PROJECT_VERSION = 1;
+				CURRENT_PROJECT_VERSION = 10;
 				GENERATE_INFOPLIST_FILE = YES;
 				MARKETING_VERSION = 1.1;
 				PRODUCT_BUNDLE_IDENTIFIER = dev.phux.zerofret.uitests;

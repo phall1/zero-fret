@@ -27,7 +27,12 @@ enum Theme {
     static let stageDeep = Color(red: 0x05 / 255, green: 0x06 / 255, blue: 0x07 / 255)
     static let stageRaised = Color(red: 0x14 / 255, green: 0x17 / 255, blue: 0x17 / 255)
     static let hairline = Color.white.opacity(0.08)
-    static let muted = Color.white.opacity(0.42)
+    /// Secondary text: the Hz line, octave numbers, captions. Opaque, so its
+    /// contrast does not depend on what happens to be behind it: 7.8:1 on the
+    /// stage and 6.5:1 on a chip. It was white at 0.42 — 4.0:1, under WCAG AA's
+    /// 4.5:1 for small text, and it read as faint at arm's length. Still under
+    /// half of `trueTone`'s contrast, so it stays secondary.
+    static let muted = Color(red: 0xA1 / 255, green: 0xA4 / 255, blue: 0xA4 / 255)
     static let faint = Color.white.opacity(0.22)
 
     static func color(for direction: TuneDirection) -> Color {

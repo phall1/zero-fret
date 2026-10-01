@@ -39,6 +39,9 @@ enum ReviewLaunch {
     static var hideDemoBadge: Bool {
         args.contains("-zf-hide-demo") || env["ZF_HIDE_DEMO"] == "1"
     }
+    /// `ZF_SHEET=settings` or `tunings`: open on that sheet, for a store
+    /// screenshot of a real screen without a UI test driving taps.
+    static var initialSheet: String? { env["ZF_SHEET"] }
 }
 
 /// The note the review recording should be hearing. Nil is silence, so the

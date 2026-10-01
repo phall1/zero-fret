@@ -68,19 +68,20 @@ final class MusicMathTests: XCTestCase {
         XCTAssertEqual(TuningLibrary.bassFive.hopSize, 2048)
     }
 
-    func testCentsTextIsFixedWidth() {
+    func testCentsTextFitsTheFixedField() {
         var state = DisplayState()
         state.hasPitch = true
-        // §6: the field is sized to −00.0¢ and updates ~47x/s. Any width change
-        // makes the whole block shimmer.
+        // §6: the *field* is sized to −00.0¢ and updates ~47x/s. The view
+        // right-aligns this text in it with monospaced digits, so what has to
+        // hold still is the decimal point, counted from the right, and nothing
+        // may outgrow the field. A padded `−00.0` used to do that job and put a
+        // sign on readings that round to zero; DisplayStateTests covers zero.
         for cents in stride(from: -120.0, through: 120.0, by: 0.7) {
             state.cents = cents
-            XCTAssertEqual(state.centsText.count, 5, "\(cents) -> \(state.centsText)")
+            let text = state.centsText
+            XCTAssertLessThanOrEqual(text.count, 5, "\(cents) -> \(text)")
+            XCTAssertEqual(text.dropLast(1).last, ".", "\(cents) -> \(text)")
         }
-        state.cents = 0
-        XCTAssertEqual(state.centsText, "+00.0")
-        state.cents = -0.04
-        XCTAssertEqual(state.centsText, "−00.0")
         // 12.35 is not exactly representable, so %.1f gives 12.3. Pick a value
         // off the rounding boundary rather than encoding a float artefact.
         state.cents = -12.36
@@ -89,10 +90,5 @@ final class MusicMathTests: XCTestCase {
         XCTAssertEqual(state.centsText, "+99.9", "must clamp rather than widen")
         state.cents = -450.0
         XCTAssertEqual(state.centsText, "−99.9")
-        state.cents = 7.0
-        XCTAssertEqual(state.centsText, "+07.0")
-        // Blank state keeps the same glyph count.
-        state.hasPitch = false
-        XCTAssertEqual(state.centsText.count, 5)
     }
 }

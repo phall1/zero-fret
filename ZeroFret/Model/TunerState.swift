@@ -153,15 +153,18 @@ struct DisplayState: Equatable {
 
     var noteLabel: String { hasPitch ? "\(noteName)\(octave)" : "—" }
 
-    /// `−00.0¢` shaped, always signed, always one decimal. Fixed width plus
-    /// `.monospacedDigit()` is what stops the block shimmering at 47 updates/s.
+    /// One decimal, signed by direction, and a plain `0.0` for anything that
+    /// rounds to zero at that precision. The sign comes from the rounded value,
+    /// not the raw one: −0.03¢ is shown as 0.0, and printing it as `−00.0` put
+    /// a direction on a reading that has none. The view right-aligns this in a
+    /// fixed-width field with `.monospacedDigit()`, so the decimal point stays
+    /// put as the digit count changes and the block does not shimmer at 47
+    /// updates/s.
     var centsText: String {
-        // Same glyph count blanked as lit, so the block does not resize when the
-        // note stops.
-        guard hasPitch else { return "–––.–" }
-        let magnitude = min(abs(cents), 99.9)
-        let sign = cents < 0 ? "−" : "+"
-        return String(format: "%@%04.1f", sign, magnitude)
+        guard hasPitch, cents.isFinite else { return "–––.–" }
+        let rounded = (min(abs(cents), 99.9) * 10).rounded() / 10
+        guard rounded > 0 else { return "0.0" }
+        return String(format: "%@%.1f", cents < 0 ? "−" : "+", rounded)
     }
 }
 

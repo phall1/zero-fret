@@ -52,6 +52,8 @@ struct TunerView: View {
     @ScaledMetric(relativeTo: .title) private var readoutSize: CGFloat = 44
     @ScaledMetric(relativeTo: .caption) private var targetLineSize: CGFloat = 12
     @ScaledMetric(relativeTo: .body) private var chipNoteSize: CGFloat = 17
+    @ScaledMetric(relativeTo: .subheadline) private var railSize: CGFloat = 15
+    @ScaledMetric(relativeTo: .footnote) private var referenceSize: CGFloat = 13
 
     var body: some View {
         ZStack {
@@ -90,6 +92,13 @@ struct TunerView: View {
         .task { await engine.onAppear() }
         #if DEBUG
         .task { await runReviewTourIfNeeded() }
+        .task {
+            // Store screenshots: open on a real sheet, once a reading is up.
+            guard let sheet = ReviewLaunch.initialSheet else { return }
+            try? await Task.sleep(for: .seconds(2.5))
+            showSettings = sheet == "settings"
+            showTunings = sheet == "tunings"
+        }
         #endif
         .onChange(of: scenePhase) { _, phase in
             switch phase {
@@ -168,12 +177,16 @@ struct TunerView: View {
             Button { showTunings = true } label: {
                 HStack(spacing: 6) {
                     Text(engine.tuning.name)
-                        .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .font(.system(size: railSize, weight: .medium, design: .rounded))
                         .lineLimit(1)
                     Image(systemName: "chevron.down")
                         .font(.system(size: 10, weight: .bold))
                 }
                 .foregroundStyle(Theme.trueTone.opacity(0.85))
+                // The words are 18pt tall; the target is not. Apple's 44pt
+                // minimum, found by the accessibility audit.
+                .frame(minHeight: 44)
+                .contentShape(Rectangle())
             }
             .accessibilityIdentifier("tuningButton")
             .accessibilityLabel("Tuning: \(engine.tuning.name). Change tuning.")
@@ -192,7 +205,7 @@ struct TunerView: View {
             Spacer(minLength: 0)
 
             Text(referenceLabel)
-                .font(.system(size: 13, weight: .medium, design: .rounded).monospacedDigit())
+                .font(.system(size: referenceSize, weight: .medium, design: .rounded).monospacedDigit())
                 .foregroundStyle(engine.referenceA == MusicMath.concertA ? Theme.muted : Theme.flat)
 
             Button { showSettings = true } label: {
@@ -275,7 +288,10 @@ struct TunerView: View {
                     .font(.system(size: isLandscape ? octaveSize * 0.66 : octaveSize,
                                   weight: .light, design: .rounded))
                     .baselineOffset(isLandscape ? 12 : 18)
-                    .foregroundStyle(accent.opacity(0.55))
+                    // 0.9: the octave is information, not decoration. At 0.55
+                    // a flat octave was 3.3:1, and the accessibility audit
+                    // still failed the thin weight at 0.7.
+                    .foregroundStyle(accent.opacity(0.9))
             }
             .lineLimit(1)
             .minimumScaleFactor(0.5)
@@ -356,7 +372,7 @@ struct TunerView: View {
             Text("¢")
                 .font(.system(size: (isLandscape ? readoutSize * 0.70 : readoutSize) * 0.55,
                           weight: .light, design: .rounded))
-                .foregroundStyle(accent.opacity(0.5))
+                .foregroundStyle(accent.opacity(0.9))
         }
         .lineLimit(1)
         .minimumScaleFactor(0.5)
@@ -374,7 +390,9 @@ struct TunerView: View {
             Text(pegInstruction)
                 .font(.system(size: targetLineSize + 1, weight: .semibold, design: .rounded))
                 .tracking(0.6)
-                .foregroundStyle(engine.display.hasPitch ? accent.opacity(0.75) : Theme.faint)
+                // Idle, this is the only instruction on the screen, so it is
+                // secondary text rather than a placeholder.
+                .foregroundStyle(engine.display.hasPitch ? accent.opacity(0.75) : Theme.muted)
                 .textCase(.uppercase)
                 .lineLimit(1)
                 .minimumScaleFactor(0.6)

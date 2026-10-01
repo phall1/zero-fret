@@ -82,10 +82,10 @@ struct TuningSheet: View {
             Section {
                 VStack(spacing: 8) {
                     Image(systemName: "star")
-                        .font(.system(size: 26, weight: .light))
+                        .font(.title.weight(.light))
                         .foregroundStyle(Theme.muted)
                     Text("No favorites yet")
-                        .font(.system(size: 16, weight: .medium, design: .rounded))
+                        .font(.system(.body, design: .rounded, weight: .medium))
                         .foregroundStyle(Theme.trueTone)
                     Text("Tap the star on any tuning in All and it stays here, so switching is one tap.")
                         .font(.footnote)
@@ -154,16 +154,16 @@ struct TuningSheet: View {
                 HStack {
                     VStack(alignment: .leading, spacing: 3) {
                         Text(tuning.name)
-                            .font(.system(size: 16, weight: .medium, design: .rounded))
+                            .font(.system(.body, design: .rounded, weight: .medium))
                             .foregroundStyle(Theme.trueTone)
                         Text(tuning.displaySummary)
-                            .font(.system(size: 12, design: .rounded))
+                            .font(.system(.caption, design: .rounded))
                             .foregroundStyle(Theme.muted)
                     }
                     Spacer()
                     if engine.tuning.id == tuning.id {
                         Image(systemName: "checkmark")
-                            .font(.system(size: 14, weight: .semibold))
+                            .font(.subheadline.weight(.semibold))
                             .foregroundStyle(Theme.trueTone)
                     }
                 }
@@ -177,9 +177,9 @@ struct TuningSheet: View {
                 collection.toggleFavorite(tuning.id)
             } label: {
                 Image(systemName: isFavorite ? "star.fill" : "star")
-                    .font(.system(size: 16, weight: .medium))
+                    .font(.body.weight(.medium))
                     .foregroundStyle(isFavorite ? Theme.flat : Theme.muted)
-                    .frame(width: 32, height: 32)
+                    .frame(minWidth: 44, minHeight: 44)
                     .contentShape(Rectangle())
             }
             .buttonStyle(.borderless)

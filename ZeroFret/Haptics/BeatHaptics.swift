@@ -19,7 +19,24 @@
 //
 //  For a blind musician this is not an enhancement, it is the whole interface.
 
+import CoreHaptics
 import UIKit
+
+/// Whether a tap can be felt at all. Every iPhone iOS 17 runs on has a Taptic
+/// Engine; no iPad does, and neither does a Mac running the iPad app. There,
+/// `UIImpactFeedbackGenerator` silently does nothing, so offering the haptic
+/// settings would be offering a switch that is not connected to anything.
+enum HapticSupport {
+    static let isAvailable: Bool = {
+        #if targetEnvironment(simulator)
+        // The simulator has no engine but stands in for a device that does;
+        // an iPhone simulator should look like an iPhone.
+        return UIDevice.current.userInterfaceIdiom == .phone
+        #else
+        return CHHapticEngine.capabilitiesForHardware().supportsHaptics
+        #endif
+    }()
+}
 
 @MainActor
 final class BeatHaptics {

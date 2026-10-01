@@ -121,19 +121,22 @@ struct TuningEditor: View {
                 // Numbered the way players number them: 1 is the highest-placed
                 // string, at the far end of the row.
                 Text("\(strings.count - position)")
-                    .font(.system(size: 13, weight: .medium, design: .rounded).monospacedDigit())
+                    .font(.system(.footnote, design: .rounded, weight: .medium).monospacedDigit())
                     .foregroundStyle(Theme.muted)
-                    .frame(width: 22, alignment: .leading)
+                    .frame(minWidth: 22, alignment: .leading)
+                    .accessibilityLabel("String \(strings.count - position)")
                 Text(MusicMath.label(midi: midi))
-                    .font(.system(size: 18, weight: .medium, design: .rounded))
+                    .font(.system(.title3, design: .rounded, weight: .medium))
                     .foregroundStyle(Theme.trueTone)
                     .frame(minWidth: 44, alignment: .leading)
                 Text(String(format: "%.1f Hz", hz))
-                    .font(.system(size: 12, design: .rounded).monospacedDigit())
+                    .font(.system(.caption, design: .rounded).monospacedDigit())
                     .foregroundStyle(Theme.muted)
             }
-            .accessibilityElement(children: .ignore)
-            .accessibilityLabel("String \(strings.count - position)")
+            // Everything the row shows, read as one phrase: "String 6, E2,
+            // 82.4 Hz". Combined from the visible text rather than replaced
+            // by a label, so nothing on screen is missing from it.
+            .accessibilityElement(children: .combine)
         }
         .accessibilityIdentifier("customString.\(position)")
         .accessibilityValue(MusicMath.label(midi: midi))
@@ -143,7 +146,7 @@ struct TuningEditor: View {
                            action: @escaping () -> Void) -> some View {
         Button(action: action) {
             Label(title, systemImage: "plus.circle")
-                .font(.system(size: 14, weight: .medium, design: .rounded))
+                .font(.system(.subheadline, design: .rounded, weight: .medium))
         }
         .disabled(!canAdd)
         .accessibilityIdentifier(identifier)
