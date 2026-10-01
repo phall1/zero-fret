@@ -1,0 +1,11 @@
+Zero Fret is a guitar and bass tuner that shows you a vibrating string instead of a needle. Pluck a string and watch its wobble slow and stop as the note comes into tune. Turn on Feel the Beat to tune by touch without looking at the screen.
+
+• Guitar and bass tuning
+• Chromatic fallback
+• Haptic beat feedback
+• Adjustable reference pitch
+• No accounts, ads, analytics, or subscriptions
+• No network connection
+• Audio is processed live on your device and is never recorded, stored, or transmitted
+
+The microphone runs only while Zero Fret is open.

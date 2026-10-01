@@ -180,6 +180,47 @@ email. Suggested description:
 
 ---
 
+## Store listing
+
+The listing text lives in `AppStore/metadata/<locale>/`, one file per field
+(`name.txt`, `subtitle.txt`, `description.txt`, `keywords.txt`,
+`promotional_text.txt`, `whats_new.txt`, the three URLs). Edit the files, not
+the App Store Connect website, so the text is reviewed and versioned like code.
+
+```sh
+source .env.asc
+Scripts/metadata.py diff              # files vs ASC, read-only (the default)
+Scripts/metadata.py push --dry-run    # the exact PATCH bodies, nothing sent
+Scripts/metadata.py push              # send only the fields that differ
+Scripts/metadata.py pull              # overwrite the files from ASC
+```
+
+A missing file leaves that field alone; an empty file clears it. Limits are
+checked before anything is sent: name and subtitle 30 characters, keywords 100,
+promotional text 170, description and What's New 4000.
+
+**What a live version lets you change.** Only the promotional text — Apple
+describes it as updatable "without requiring an updated submission". Everything
+else (name, subtitle, description, keywords, What's New) needs a version in an
+editable state: Prepare for Submission, or one that was rejected. `push` against
+a live-only app sends the promotional text and lists the rest as skipped, exiting
+non-zero. The support, marketing and privacy URLs are not documented either way,
+so the script does not try them on a live version.
+
+**When the rest needs to ship:**
+
+```sh
+Scripts/metadata.py push --create-version 1.1 --dry-run
+Scripts/metadata.py push --create-version 1.1
+```
+
+That creates the 1.1 version record, then pushes every differing field to it.
+Attaching a build and submitting is still `Scripts/archive.sh --upload` and the
+website. What's New does not exist for the first version, so `whats_new.txt`
+stays empty until 1.1.
+
+---
+
 ## Version numbering
 
 `MARKETING_VERSION` (1.0) and `CURRENT_PROJECT_VERSION` (1) live in the project.
