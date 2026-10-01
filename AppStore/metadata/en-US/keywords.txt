@@ -1,1 +1,1 @@
-guitar,bass,tuner,chromatic,pitch,tuning,instrument,music,strings,haptic,free
+ukulele,bass,chromatic,mandolin,banjo,violin,drop d,dadgad,open tuning,custom,acoustic,electric

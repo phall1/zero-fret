@@ -1,11 +1,25 @@
-Zero Fret is a guitar and bass tuner that shows you a vibrating string instead of a needle. Pluck a string and watch its wobble slow and stop as the note comes into tune. Turn on Feel the Beat to tune by touch without looking at the screen.
+Zero Fret is a tuner that shows you the string, not a needle.
 
-• Guitar and bass tuning
-• Chromatic fallback
-• Haptic beat feedback
-• Adjustable reference pitch
-• No accounts, ads, analytics, or subscriptions
-• No network connection
-• Audio is processed live on your device and is never recorded, stored, or transmitted
+Pluck a note and the string on screen wobbles at exactly the rate yours is beating against the right pitch. Turn the peg and the wobble slows. When it goes still, you're in tune, and one haptic tick in your hand says so.
 
-The microphone runs only while Zero Fret is open.
+Turn on Feel the Beat and the phone taps that beat into your palm while you tune, so your eyes can stay on the pegs. It's how instruments were tuned before there were tuners.
+
+WHAT IT TUNES
+• Guitar: Standard, Drop D, E♭, D Standard, DADGAD, Open G, Open D, 7- and 8-string
+• Bass: 4-, 5- and 6-string
+• Ukulele: standard, low G, D tuning, baritone
+• Mandolin, mandola, banjo (open G, double C, tenor), violin and viola
+• Anything else: build your own tuning, 2 to 12 strings
+
+QUICK TO SWITCH
+• Star the tunings you actually play and filter the list down to just those
+• Tap a string to lock onto it, tap again to let go
+• Strings you've already tuned stay marked, so you know what's left
+• Reference pitch from A = 410 to 470 Hz, and adjustable tolerance
+
+FREE. FOR REAL.
+No ads. No subscription. No account. No tracking. No "pro" upgrade. Zero Fret is free and open source, and it's staying that way.
+
+Your audio is processed live on your phone and is never recorded, stored or sent anywhere. The app doesn't use the network at all, and the microphone only runs while Zero Fret is open.
+
+Source code: github.com/phall1/zero-fret
