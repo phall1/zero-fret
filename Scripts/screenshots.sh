@@ -1,11 +1,24 @@
 #!/usr/bin/env bash
 #
-# Capture iPhone 6.5" App Store screenshots from the running app.
+# App Store screenshots: real captures of the app, each framed with a short
+# headline in its own band above it.
 #
-#   Scripts/screenshots.sh
+#   Scripts/screenshots.sh            # iPhone 6.9" and iPad 13"
+#   Scripts/screenshots.sh iphone     # just one
 #
-# Portrait frames are the simulator's native 1284×2778. Landscape is 2778×1284.
-# Nothing is resized. The pose arguments are simulator-only; see SyntheticInput.
+# Writes, per device:
+#   AppStore/screenshots/<device>/capture/NN-name.png   the simulator's own pixels
+#   AppStore/screenshots/<device>/NN-name.png           what gets uploaded
+#   AppStore/screenshots/contact-<device>.png           the set at phone viewing size
+#
+# Every screen is the Debug build of the shipping UI, driven by the simulator's
+# synthetic input held on one note (see SyntheticInput's pose) with the DEMO
+# badge hidden. Sheets are opened by ZF_SHEET rather than by tapping, and
+# settings are written with `defaults` before launch, so each capture is the
+# real view in a known state. Captures are never resized into another device's
+# shape; the frame scales them uniformly.
+#
+# The shot list — order, pose and copy — is SHOTS below. Change the copy there.
 #
 set -euo pipefail
 cd "$(dirname "$0")/.."
@@ -14,96 +27,100 @@ PATH="/usr/bin:/bin:/usr/sbin:/sbin:$PATH"
 export PATH
 
 BUNDLE_ID=dev.phux.zerofret
-NAME=ZeroFret-6.5
-OUT=AppStore/screenshots
+ROOT=AppStore/screenshots
 DERIVED=build/DerivedData-screenshots
-APP="$DERIVED/Build/Products/Debug-iphonesimulator/ZeroFret.app"
 
-mkdir -p "$OUT"
+# device key | simulator name | upload width | upload height
+DEVICES=(
+  "iphone|iPhone 17 Pro Max|1320|2868"
+  "ipad|iPad Pro 13-inch (M5)|2064|2752"
+)
+
+# devices | file | midi | cents | sheet | headline | supporting line
+# midi/cents pose the synthetic note; "-" for sheet means the tuner itself.
+# The haptic shots are iPhone only: no iPad has a haptic engine, and the app
+# disables Feel the Beat there (HapticSupport), so showing it would be false.
+SHOTS=(
+  "iphone,ipad|01-see-it-settle|40|0|-|See your string settle.|A guitar, bass & ukulele tuner with a different view."
+  "iphone|02-feel-the-beat|40|-9|settings|Feel the Beat.|Turn it on in Settings for a tap in your hand on every beat."
+  "iphone|03-tune-by-touch|45|-12|-|Tune by touch.|Pluck, then turn the peg. The taps slow as you get close."
+  "iphone,ipad|04-too-slack|40|-22|-|Too slack? Tighten.|Every reading says which way to turn, in words."
+  "iphone,ipad|05-your-tunings|45|0|tunings|Guitar. Bass. Ukulele. Yours.|Star the tunings you play, or build your own."
+  "iphone,ipad|06-no-catch|45|16|-|No accounts. No ads.|Free for good. Audio never leaves your device."
+)
 
 udid() {
-  xcrun simctl list devices available | awk -v name="$NAME" -F '[()]' '
-    $0 ~ name && /Booted|Shutdown/ { print $2; exit }
+  xcrun simctl list devices available | awk -v name="$1" '
+    index($0, "    " name " (") == 1 { match($0, /\([0-9A-F-]+\)/); print substr($0, RSTART + 1, RLENGTH - 2); exit }
   '
 }
 
-UDID=$(udid)
-if [[ -z "$UDID" ]]; then
-  echo "error: no simulator named $NAME. Create an iPhone 14 Plus (or 13/12 Pro Max) first." >&2
-  exit 1
-fi
+prepare() {
+  local udid="$1"
+  if ! xcrun simctl boot "$udid" 2>/dev/null; then :; fi
+  xcrun simctl bootstatus "$udid" -b >/dev/null
+  xcodebuild build \
+    -project ZeroFret.xcodeproj -scheme ZeroFret \
+    -destination "platform=iOS Simulator,id=$udid" \
+    -derivedDataPath "$DERIVED" CODE_SIGNING_ALLOWED=NO -quiet
+  local app
+  app=$(find "$DERIVED/Build/Products" -maxdepth 2 -name ZeroFret.app -path "*iphonesimulator*" | head -1)
+  xcrun simctl install "$udid" "$app"
+  xcrun simctl status_bar "$udid" override --time "9:41" --batteryState charged \
+    --batteryLevel 100 --wifiBars 3 --cellularMode active --cellularBars 4 || true
+  xcrun simctl ui "$udid" appearance dark || true
 
-echo "==> boot $UDID"
-if ! xcrun simctl boot "$UDID" 2>/dev/null; then
-  # A second simulator sometimes will not boot while another is already up.
-  xcrun simctl shutdown all || true
-  xcrun simctl boot "$UDID"
-fi
-xcrun simctl bootstatus "$UDID" -b
+  # A known state: Feel the Beat on (the Settings shot shows it), A440, and a
+  # few favorites so the tuning sheet shows what the feature is for.
+  local d=(xcrun simctl spawn "$udid" defaults write "$BUNDLE_ID")
+  "${d[@]}" zf.beatHapticsEnabled -bool YES
+  "${d[@]}" zf.hapticsEnabled -bool YES
+  "${d[@]}" zf.referenceA -float 440
+  "${d[@]}" zf.tuningID -string guitar.standard
+  "${d[@]}" zf.favoritesOnly -bool YES
+  "${d[@]}" zf.favoriteTunings -array guitar.standard guitar.dropD guitar.dadgad bass.four ukulele.standard
+}
 
-echo "==> build"
-xcodebuild build \
-  -project ZeroFret.xcodeproj \
-  -scheme ZeroFret \
-  -destination "platform=iOS Simulator,id=$UDID" \
-  -derivedDataPath "$DERIVED" \
-  CODE_SIGNING_ALLOWED=NO \
-  -quiet
-
-echo "==> install"
-xcrun simctl install "$UDID" "$APP"
-xcrun simctl status_bar "$UDID" override \
-  --time "9:41" \
-  --batteryState charged \
-  --batteryLevel 100 \
-  --wifiBars 3 \
-  --cellularMode active \
-  --cellularBars 4 || true
-
-# simctl has no orientation command on this Xcode. Portrait is the slot Apple
-# rejected. Landscape is a menu rotate after those frames exist.
 capture() {
-  local file="$1" midi="$2" cents="$3"
-  xcrun simctl terminate "$UDID" "$BUNDLE_ID" >/dev/null 2>&1 || true
+  local udid="$1" out="$2" midi="$3" cents="$4" sheet="$5"
+  xcrun simctl terminate "$udid" "$BUNDLE_ID" >/dev/null 2>&1 || true
+  if [[ "$sheet" == "-" ]]; then sheet=""; fi
   SIMCTL_CHILD_ZF_POSE_MIDI="$midi" \
   SIMCTL_CHILD_ZF_POSE_CENTS="$cents" \
   SIMCTL_CHILD_ZF_HIDE_DEMO=1 \
-    xcrun simctl launch "$UDID" "$BUNDLE_ID" >/dev/null
-  # Engine start plus a detection window. A held tone locks well inside this.
-  sleep 5
-  xcrun simctl io "$UDID" screenshot "$OUT/$file"
-  echo "    $file"
+  SIMCTL_CHILD_ZF_SHEET="$sheet" \
+    xcrun simctl launch "$udid" "$BUNDLE_ID" >/dev/null
+  # Engine start, a detection window, the smoother settling and, for a
+  # sheet, its 2.5 s delay plus the presentation animation.
+  sleep 6
+  xcrun simctl io "$udid" screenshot "$out" >/dev/null
 }
 
-echo "==> capture"
-capture "01-in-tune-low-e.png" 40 0
-capture "02-flat-low-e.png" 40 -22
-capture "03-in-tune-high-e.png" 64 0
-capture "04-sharp-a.png" 45 16
-
-echo "==> dimensions"
-fail=0
-check() {
-  local file="$1" want_w="$2" want_h="$3"
-  local w h
-  w=$(sips -g pixelWidth "$OUT/$file" | awk '/pixelWidth/ { print $2 }')
-  h=$(sips -g pixelHeight "$OUT/$file" | awk '/pixelHeight/ { print $2 }')
-  if [[ "$w" != "$want_w" || "$h" != "$want_h" ]]; then
-    echo "error: $file is ${w}x${h}, want ${want_w}x${want_h}" >&2
-    fail=1
-  else
-    echo "    $file ${w}x${h}"
+only="${1:-}"
+for device in "${DEVICES[@]}"; do
+  IFS='|' read -r key name width height <<<"$device"
+  [[ -n "$only" && "$only" != "$key" ]] && continue
+  UDID=$(udid "$name")
+  if [[ -z "$UDID" ]]; then
+    echo "error: no simulator named \"$name\"" >&2
+    exit 1
   fi
-}
-check 01-in-tune-low-e.png 1284 2778
-check 02-flat-low-e.png 1284 2778
-check 03-in-tune-high-e.png 1284 2778
-check 04-sharp-a.png 1284 2778
-if [[ -f "$OUT/05-landscape-in-tune.png" ]]; then
-  check 05-landscape-in-tune.png 2778 1284
-fi
+  echo "==> $key: $name ($UDID)"
+  prepare "$UDID"
 
-if [[ "$fail" != 0 ]]; then
-  exit 1
-fi
-echo "==> $OUT"
+  mkdir -p "$ROOT/$key/capture"
+  framed=()
+  for shot in "${SHOTS[@]}"; do
+    IFS='|' read -r devices file midi cents sheet headline subline <<<"$shot"
+    [[ ",$devices," == *",$key,"* ]] || continue
+    capture "$UDID" "$ROOT/$key/capture/$file.png" "$midi" "$cents" "$sheet"
+    swift Scripts/storeframe.swift "$ROOT/$key/capture/$file.png" "$ROOT/$key/$file.png" \
+      "$width" "$height" "$headline" "$subline"
+    framed+=("$ROOT/$key/$file.png")
+  done
+  xcrun simctl terminate "$UDID" "$BUNDLE_ID" >/dev/null 2>&1 || true
+
+  # About the height of an App Store card on a phone, so the headlines are
+  # judged at the size people meet them.
+  swift Scripts/contactsheet.swift "$ROOT/contact-$key.png" 640 "Zero Fret 1.1 — $name" "${framed[@]}"
+done

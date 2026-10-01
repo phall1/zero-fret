@@ -1,1 +1,1 @@
-ukulele,bass,chromatic,mandolin,banjo,violin,drop d,dadgad,open tuning,custom,acoustic,electric
+ukulele,chromatic,mandolin,banjo,violin,drop d,dadgad,open tuning,custom,acoustic,electric,free

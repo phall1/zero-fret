@@ -223,7 +223,13 @@ stays empty until 1.1.
 
 ## Version numbering
 
-`MARKETING_VERSION` (1.1) and `CURRENT_PROJECT_VERSION` (1) live in the project.
-Pass `--build N` to `Scripts/archive.sh` to override the build number for a given
-upload; App Store Connect rejects a build number it has already seen for the same
-version.
+`MARKETING_VERSION` (1.1) and `CURRENT_PROJECT_VERSION` (10) live in
+`Scripts/genproj.py`, which writes them into the project. Build numbers only ever
+go up across versions, so a crash log or TestFlight build is never ambiguous:
+1.0 shipped as build 9, so 1.1 starts at 10. Pass `--build N` to
+`Scripts/archive.sh` to override it for a re-upload; App Store Connect rejects a
+build number it has already seen for the same version.
+
+Each release that reaches the store gets an annotated tag, `vX.Y`, on the commit
+it was archived from, with the build number in the message. `v1.0` is
+`635b59d`, the last commit before the build-9 archive (2026-08-28 01:59).

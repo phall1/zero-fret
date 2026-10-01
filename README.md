@@ -270,8 +270,37 @@ not hold three periods in 4096 and the NSDF peak stops being trustworthy.
 
 ## Privacy
 
-The microphone runs only in the foreground. There is deliberately no `audio`
-entry in `UIBackgroundModes`. Nothing is recorded, stored, or transmitted.
+Zero Fret collects no data. This is the app's privacy policy, and it is short
+because there is nothing to declare.
+
+- **Microphone.** Used only to hear your instrument while you tune. The sound
+  is analysed in memory, a fraction of a second at a time, and discarded. It is
+  never recorded, saved to a file, or sent anywhere. The microphone runs only
+  while Zero Fret is the app on screen; it stops when the app goes to the
+  background, and there is deliberately no `audio` entry in
+  `UIBackgroundModes`, so it cannot keep listening. You can turn access off at
+  any time in Settings → Privacy & Security → Microphone.
+- **What is stored, on your device only.** Your settings (reference pitch,
+  tolerance, haptics, response), the selected tuning, your custom tunings and
+  your favorites, in the app's own preferences. Deleting the app deletes them.
+  They are included in your device backup the way every app's preferences are;
+  Zero Fret does not upload them itself.
+- **No network.** The app makes no network connections at all: no analytics,
+  no crash reporting, no advertising, no accounts, no third-party SDKs. It has
+  no dependencies beyond Apple's own frameworks.
+- **Apple.** If you have chosen to share analytics with developers in iOS
+  Settings, Apple may provide aggregated crash and usage reports through App
+  Store Connect. That is Apple's service, governed by Apple's privacy policy,
+  not something this app adds.
+- **Children.** The app collects nothing from anyone, children included.
+
+The App Store privacy label is **Data Not Collected**, and the app's privacy
+manifest (`ZeroFret/App/PrivacyInfo.xcprivacy`) declares no tracking and no
+collected data types. It does declare one "required reason" API: UserDefaults,
+for the settings above (reason CA92.1, the app's own data).
+
+Questions: [open an issue](https://github.com/phall1/zero-fret/issues).
+Changes to this policy are in this file's history.
 
 ## Acceptance
 
