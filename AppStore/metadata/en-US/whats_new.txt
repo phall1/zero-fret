@@ -2,7 +2,7 @@
 • Make your own tunings: tap + in the tuning menu
 • Star the tunings you use and filter down to just those
 • Tunings read in string order, so DADGAD reads D A D G A D
-• A perfect reading now shows 0.0, not −00.0
+• A perfect reading now shows 0.0, not -00.0
 • Clearer secondary text, larger tap targets, and support for larger text sizes in menus
 
 Still free. Still no ads. Nothing leaves your device.

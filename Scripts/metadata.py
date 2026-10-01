@@ -179,6 +179,12 @@ def validate(files):
                 problems.append(f"{locale}/{f}: {len(text)} characters, limit is {limit}")
             if "\n" in text and attr in ("name", "subtitle", "keywords", "promotionalText"):
                 problems.append(f"{locale}/{f}: must be a single line")
+        for f, _, _, _ in FIELDS:
+            # Apple rejects these in listing text (HTTP 409 "can't contain the
+            # following character(s)"), even though they are ordinary Unicode.
+            bad = sorted(set(fields.get(f) or "") & set("♭♯"))
+            if bad:
+                problems.append(f"{locale}/{f}: Apple rejects {' '.join(bad)}; spell it out (E-flat)")
         kw = fields.get("keywords.txt")
         if kw is not None and len(kw.encode()) > 100:
             # Apple's reference says "up to 100 bytes"; the form counts characters.

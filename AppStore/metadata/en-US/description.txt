@@ -2,7 +2,7 @@ Zero Fret is a guitar and bass tuner you can see and feel.
 
 Pluck a string and watch it wobble on screen at the rate your string is beating against the right note. Turn the peg and the wobble slows; when it stops, you're in tune. On iPhone, turn on Feel the Beat and the phone taps once per beat in your hand, so you can keep your eyes on the pegs.
 
-• Guitar: Standard, Drop D, E♭, D Standard, DADGAD, Open G, Open D, 7- and 8-string
+• Guitar: Standard, Drop D, E-flat, D Standard, DADGAD, Open G, Open D, 7- and 8-string
 • Bass: 4-, 5- and 6-string
 • Ukulele (standard, low G, D, baritone), mandolin, mandola, banjo, violin and viola
 • Your own custom tunings, and favorites for one-tap switching
