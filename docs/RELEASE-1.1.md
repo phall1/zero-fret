@@ -1,5 +1,10 @@
 # Zero Fret 1.1: release evidence
 
+**Status: submitted 2026-10-01, Waiting for Review, releases automatically on
+approval.** Build 10, tagged `v1.1` (`0212494`). Listing text, screenshots
+(6.9" ×6, iPad 13" ×4, old 6.5" set deleted) and the privacy policy are live
+on the version. The device checks in §8 were not run before submission.
+
 This is the review packet for 1.1: what changed, what was verified and how, and
 what still needs a person, a device or an approval. Nothing here has been
 submitted, and no live App Store metadata has been changed. The privacy policy

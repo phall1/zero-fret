@@ -215,6 +215,15 @@ Scripts/metadata.py push --create-version 1.1
 ```
 
 That creates the 1.1 version record, then pushes every differing field to it.
+
+Screenshots follow the same path: `Scripts/screenshots.sh` captures and frames
+them, then `Scripts/upload_screenshots.py` (with `--dry-run` first) replaces
+the editable version's sets with them and deletes any set for a size it does
+not produce. Apple copies the previous version's screenshots into a new
+version, so without this an update ships the old ones.
+
+App Store Connect rejects ♭ and ♯ in listing text (HTTP 409); `metadata.py`
+refuses them before sending.
 Attaching a build and submitting is still `Scripts/archive.sh --upload` and the
 website. What's New does not exist for the first version, so `whats_new.txt`
 stays empty until 1.1.
