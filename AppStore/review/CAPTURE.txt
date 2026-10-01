@@ -1,0 +1,10 @@
+kind: physical
+device: iPhone 13 Pro
+os: iOS 26.6
+captured: 2026-09-24 11:32 EDT
+source: ScreenRecording_09-24-2026 11-32-07_1.mp4 (Photos)
+file: AppStore/review/zero-fret-review.mp4
+duration: 51s
+signal: live microphone (orange indicator on; Settings shows Front · cardioid)
+audio: stripped from the attachment so the file matches "audio is never recorded"
+begins: home screen, launch, microphone permission, then flat → in tune → Drop D → E♭ → pin → tuning sheet → settings

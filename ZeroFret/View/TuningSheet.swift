@@ -41,7 +41,11 @@ struct TuningSheet: View {
             }
         }
         .preferredColorScheme(.dark)
+        #if DEBUG
+        .presentationDetents(ReviewLaunch.tourEnabled ? [.large] : [.medium, .large])
+        #else
         .presentationDetents([.medium, .large])
+        #endif
     }
 
     @ViewBuilder

@@ -37,10 +37,18 @@ final class AudioEngine {
     private var observers: [NSObjectProtocol] = []
     private var wantsRunning = false
 
-    #if targetEnvironment(simulator)
-    /// See `SyntheticInput`. The Simulator never touches AVAudioEngine.
+    #if targetEnvironment(simulator) || DEBUG
+    /// See `SyntheticInput`. The Simulator never touches AVAudioEngine. A Debug
+    /// device build uses the same path only when launched with `-zf-review-demo`
+    /// (or the review tour), so a recording can show a note without an instrument.
+    /// Release, which is what ships, does not compile this.
     private lazy var synthetic = SyntheticInput(writer: ring.writer, sampleRate: 48000)
+    #endif
+
+    #if targetEnvironment(simulator)
     let isSyntheticSource = true
+    #elseif DEBUG
+    let isSyntheticSource = ReviewLaunch.demoEnabled
     #else
     let isSyntheticSource = false
     #endif
@@ -81,7 +89,13 @@ final class AudioEngine {
     var authorization: MicrophoneAuthorization {
         #if targetEnvironment(simulator)
         return .granted
-        #else
+        #elseif DEBUG
+        // The review recording does not open the microphone, so it must not
+        // raise the permission alert and then wait for a tap that nobody is there
+        // to make.
+        if ReviewLaunch.demoEnabled { return .granted }
+        #endif
+        #if !targetEnvironment(simulator)
         switch AVAudioApplication.shared.recordPermission {
         case .granted: return .granted
         case .denied: return .denied
@@ -105,13 +119,16 @@ final class AudioEngine {
     func start() {
         wantsRunning = true
 
-        #if targetEnvironment(simulator)
-        sampleRate = 48000
-        synthetic.start()
-        lastError = nil
-        setRunning(true)
-        return
-        #else
+        if useSyntheticInput {
+            sampleRate = 48000
+            #if targetEnvironment(simulator) || DEBUG
+            synthetic.start()
+            #endif
+            lastError = nil
+            setRunning(true)
+            return
+        }
+
         guard authorization == .granted else { return }
         do {
             try configureSession()
@@ -122,19 +139,31 @@ final class AudioEngine {
             log.error("start failed: \(error.localizedDescription, privacy: .public)")
             setRunning(false)
         }
-        #endif
     }
 
     func stop() {
         wantsRunning = false
-        #if targetEnvironment(simulator)
-        synthetic.stop()
-        setRunning(false)
-        return
-        #else
+        if useSyntheticInput {
+            #if targetEnvironment(simulator) || DEBUG
+            synthetic.stop()
+            #endif
+            setRunning(false)
+            return
+        }
         teardown()
         try? session.setActive(false, options: [.notifyOthersOnDeactivation])
         setRunning(false)
+    }
+
+    /// Simulator always. A device only when a review launch asked for it, and
+    /// only in Debug — `ReviewLaunch` does not exist in Release.
+    private var useSyntheticInput: Bool {
+        #if targetEnvironment(simulator)
+        return true
+        #elseif DEBUG
+        return ReviewLaunch.demoEnabled
+        #else
+        return false
         #endif
     }
 
@@ -198,6 +227,7 @@ final class AudioEngine {
 
     /// What the input is actually doing, for the Settings readout.
     var inputDescription: String {
+        if isSyntheticSource { return "Synthetic" }
         #if targetEnvironment(simulator)
         return "Synthetic"
         #else

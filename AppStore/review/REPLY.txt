@@ -1,0 +1,37 @@
+Guideline 2.1 — Information Needed
+
+Zero Fret is ready. No account, no login, no user-generated content, no paid content. This text is also in App Review Information → Notes.
+
+1. Screen recording
+
+Attached: zero-fret-review.mp4 (51 seconds).
+
+Captured on a physical iPhone 13 Pro running iOS 26.6, the latest OS this device supports. It begins on the home screen and launches Zero Fret. It includes the microphone permission dialog, then the typical flow on the live microphone: a string arriving flat ("too slack · tighten"), coming into tune, Drop D and E♭ Standard, pinning a string, the tuning sheet, and Settings (Feel the beat, response, and the signal readout, which names the front cardioid microphone). The orange indicator is on only while the app is in front.
+
+Not in the recording, because the app does not have them: account registration, login, or deletion; user-generated content (so no report/block UI); paid content or In-App Purchase.
+
+No login and no sample file. Pluck an open string. The app does not record or transmit audio. The attached file is a screen recording of the display and has no audio track.
+
+2. Purpose and audience
+
+Zero Fret is a guitar and bass tuner. A needle asks you to look at the phone while both hands are on the pegs. This draws a string instead. It wobbles at the beat rate against the target and goes still when the note is in. One haptic tick on arrival. Optional "Feel the beat" taps once per beat in the hand, so you can tune without looking — including if you cannot see the screen. Audience: guitarists and bassists, beginners included.
+
+3. How to reach the main features
+
+No login, no sample files, no demo account.
+
+Open the app. Allow the microphone. Audio is not recorded, stored, or transmitted, and the mic stops when the app leaves the foreground. There is no background-audio mode. Pluck an open string. Tuning (top left) switches among Standard, Drop D, E♭, D Standard, DADGAD, Open G, Open D, 7-string, 8-string, and bass 4/5/6. Settings (top right): reference pitch (default A=440), tolerance, haptic tick, Feel the beat, response speed. Tap a string chip to pin; tap again to release. Landscape widens the string. Reduce Motion holds it still and keeps the cents.
+
+4. External services
+
+None. No network. No data provider, authentication service, payment processor, analytics, or AI service. Detection, display, and haptics run on device (AVFoundation, Accelerate, SwiftUI, UIKit). Privacy nutrition label: Data Not Collected. ITSAppUsesNonExemptEncryption is false.
+
+5. Regional differences
+
+None. Same features in every region. No region-gated content. Interface is English. Targets are equal-temperament MIDI notes derived from the player's reference A, not from the storefront.
+
+6. Regulated industry / protected material
+
+Not applicable. Not a medical, financial, or licensed-content service. No recordings, scores, or other protected third-party material. Tuning presets are standard open-string note names.
+
+Also: tested on a physical iPhone 13 Pro (iOS 26.6) before submission. Screenshots show the tuner in use, not a splash screen. No In-App Purchases. Public consumer app, not an employee or business-only app.

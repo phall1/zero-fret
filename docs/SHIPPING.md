@@ -172,6 +172,11 @@ email. Suggested description:
   of silence. Permanently disabling it is a battery complaint and a review
   question.
 - **Privacy nutrition label.** Data Not Collected. Nothing leaves the device.
+- **Guideline 2.1 recording.** `Scripts/review-recording.sh` cold-launches the app
+  and walks the typical flow into `AppStore/review/`. The phone has to be
+  unlocked; a locked phone records black, and Apple asked for a physical device.
+  The generated string is Debug-only. The reply to paste is
+  `AppStore/review/REPLY.txt`.
 
 ---
 

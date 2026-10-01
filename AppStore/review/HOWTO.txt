@@ -1,0 +1,8 @@
+Attach this file. The notes text has to be updated to match it.
+
+1. App Store Connect → the Guideline 2.1 message.
+2. Paste AppStore/review/REPLY.txt.
+3. Attach AppStore/review/zero-fret-review.mp4 (13 MB, 51 seconds, no audio track).
+4. Send.
+
+The recording is the one from the iPhone 13 Pro at 11:32. It starts on the home screen.

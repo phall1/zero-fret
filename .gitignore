@@ -28,6 +28,9 @@ secrets/
 
 # Scratch
 *.log
+AppStore/review/*.mp4
+AppStore/review/.raw-*.mp4
+AppStore/review/frames/
 build/DerivedData/
 *.xcarchive
 

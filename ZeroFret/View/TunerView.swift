@@ -21,6 +21,18 @@ struct TunerView: View {
 
     private var isLandscape: Bool { verticalSizeClass == .compact }
 
+    /// The shipping app has no demo chip. The simulator shows one so a generated
+    /// reading cannot be mistaken for a microphone — except a screenshot launch,
+    /// which passes `-zf-hide-demo` or `ZF_HIDE_DEMO=1` so the store shot matches
+    /// the device. The flag string stays in the simulator build only.
+    private var showsDemoBadge: Bool {
+        guard engine.isDemoSignal else { return false }
+        #if DEBUG || targetEnvironment(simulator)
+        if ReviewLaunch.hideDemoBadge { return false }
+        #endif
+        return true
+    }
+
     /// Pinning is a deliberate choice about what the app is listening to, so it
     /// gets the selection feedback the system uses for exactly that, and never
     /// the impact used for §7's in-tune tick — two different events must not
@@ -78,6 +90,9 @@ struct TunerView: View {
         .preferredColorScheme(.dark)
         .statusBarHidden(isLandscape)
         .task { await engine.onAppear() }
+        #if DEBUG
+        .task { await runReviewTourIfNeeded() }
+        #endif
         .onChange(of: scenePhase) { _, phase in
             switch phase {
             case .active:
@@ -106,6 +121,48 @@ struct TunerView: View {
         .sheet(isPresented: $showSettings) { SettingsView() }
     }
 
+    #if DEBUG
+    /// Opens the tuning sheet, switches to Drop D, opens Settings, turns on
+    /// Feel the beat, pins a string, then puts the persisted settings back.
+    /// Only runs for `-zf-review-tour`. The sleeps are the recording's shot list.
+    private func runReviewTourIfNeeded() async {
+        guard ReviewLaunch.tourEnabled else { return }
+        let savedTuning = engine.tuning
+        let savedReference = engine.referenceA
+        let savedBeat = engine.beatHapticsEnabled
+
+        await waitUntil(ReviewTour.openTunings)
+        showTunings = true
+        await waitUntil(ReviewTour.selectDropD)
+        engine.tuning = TuningLibrary.dropD
+        await waitUntil(ReviewTour.dismissTunings)
+        showTunings = false
+        await waitUntil(ReviewTour.openSettings)
+        showSettings = true
+        await waitUntil(ReviewTour.setReference)
+        engine.referenceA = 442
+        await waitUntil(ReviewTour.enableBeat)
+        engine.beatHapticsEnabled = true
+        await waitUntil(ReviewTour.dismissSettings)
+        showSettings = false
+        await waitUntil(ReviewTour.pin)
+        engine.pinnedString = 0
+        await waitUntil(ReviewTour.unpin)
+        engine.pinnedString = nil
+        await waitUntil(ReviewTour.restore)
+        engine.tuning = savedTuning
+        engine.referenceA = savedReference
+        engine.beatHapticsEnabled = savedBeat
+        engine.pinnedString = nil
+    }
+
+    private func waitUntil(_ mark: Double) async {
+        let remaining = mark - ReviewLaunch.elapsed
+        guard remaining > 0 else { return }
+        try? await Task.sleep(for: .seconds(remaining))
+    }
+    #endif
+
     // MARK: - Top rail
 
     private var topRail: some View {
@@ -122,7 +179,7 @@ struct TunerView: View {
             .accessibilityIdentifier("tuningButton")
             .accessibilityLabel("Tuning: \(engine.tuning.name). Change tuning.")
 
-            if engine.isDemoSignal {
+            if showsDemoBadge {
                 Text("DEMO")
                     .font(.system(size: 9, weight: .heavy, design: .rounded))
                     .tracking(1.2)
