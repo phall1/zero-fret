@@ -122,10 +122,13 @@ final class TunerEngine {
         }
     }
 
-    var tuning: Tuning = Defaults.tuning {
+    /// The presets, the player's own tunings, and which ones are starred.
+    let tunings: TuningCollection
+
+    var tuning: Tuning {
         didSet {
             guard tuning != oldValue else { return }
-            Defaults.tuning = tuning
+            Defaults.tuningID = tuning.id
             pinnedString = nil
             assigner.reset()
             tick.rearm()
@@ -189,6 +192,9 @@ final class TunerEngine {
     }
 
     init() {
+        let tunings = TuningCollection()
+        self.tunings = tunings
+        tuning = Defaults.tuningID.flatMap(tunings.tuning(id:)) ?? TuningLibrary.standard
         permission = audio.authorization
         tick.isEnabled = hapticsEnabled
         assigner.pinnedIndex = nil
@@ -530,6 +536,23 @@ final class TunerEngine {
         tunedStrings.removeAll()
     }
 
+    // MARK: - Custom tunings
+
+    /// Stores a custom tuning and tunes to it. Editing the tuning already in
+    /// use goes through `tuning`'s setter like any other change, so the pin,
+    /// the remembered strings and the detector's targets all follow the edit.
+    func saveCustomTuning(_ tuning: Tuning) {
+        guard let saved = tunings.save(tuning) else { return }
+        self.tuning = saved
+    }
+
+    /// Deleting the tuning in use falls back to Standard rather than leaving
+    /// the detector aimed at strings that no longer exist anywhere.
+    func deleteCustomTuning(id: String) {
+        tunings.delete(id: id)
+        if tuning.id == id { tuning = TuningLibrary.standard }
+    }
+
     func openSettings() {
         guard let url = URL(string: UIApplication.openSettingsURLString) else { return }
         UIApplication.shared.open(url)
@@ -586,12 +609,10 @@ private enum Defaults {
         set { store.set(newValue, forKey: Key.beatHaptics) }
     }
 
-    static var tuning: Tuning {
-        get {
-            guard let id = store.string(forKey: Key.tuning),
-                  let tuning = TuningLibrary.tuning(id: id) else { return TuningLibrary.standard }
-            return tuning
-        }
-        set { store.set(newValue.id, forKey: Key.tuning) }
+    /// Only the ID: a custom tuning's notes live in `TuningCollection`, so an
+    /// edit there is what the next launch sees.
+    static var tuningID: String? {
+        get { store.string(forKey: Key.tuning) }
+        set { store.set(newValue, forKey: Key.tuning) }
     }
 }

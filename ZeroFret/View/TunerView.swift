@@ -41,9 +41,7 @@ struct TunerView: View {
 
     /// Where this string sits between the thinnest and thickest in the tuning.
     private func chipGauge(for string: TuningString) -> Double {
-        let count = engine.tuning.strings.count
-        guard count > 1 else { return 0.5 }
-        return 1 - Double(string.index) / Double(count - 1)
+        engine.tuning.gauge(of: string.index)
     }
 
     /// Type scales with the reader's setting. The stage is read at arm's length
@@ -171,6 +169,7 @@ struct TunerView: View {
                 HStack(spacing: 6) {
                     Text(engine.tuning.name)
                         .font(.system(size: 15, weight: .medium, design: .rounded))
+                        .lineLimit(1)
                     Image(systemName: "chevron.down")
                         .font(.system(size: 10, weight: .bold))
                 }
@@ -328,10 +327,7 @@ struct TunerView: View {
     /// A wound low E really is several times the diameter of a plain high E.
     private var gauge: Double {
         guard let index = engine.display.stringIndex else { return 0.5 }
-        let count = engine.tuning.strings.count
-        guard count > 1 else { return 0.5 }
-        // Index 0 is the lowest string, so it is the thick end of the set.
-        return 1 - Double(index) / Double(count - 1)
+        return engine.tuning.gauge(of: index)
     }
 
     private var string: some View {

@@ -45,7 +45,8 @@ enum MusicMath {
     }
 }
 
-/// One string of a tuning. `index` is 0 for the lowest-pitched string.
+/// One string of a tuning. `index` is 0 for the string nearest the player's
+/// face — the lowest-pitched one, except on a re-entrant tuning (see `Tuning`).
 struct TuningString: Identifiable, Hashable {
     let index: Int
     let midi: Int
@@ -60,24 +61,71 @@ struct TuningString: Identifiable, Hashable {
     }
 }
 
-/// Instrument family, which selects the analysis window (§3).
+/// Which section of the tuning sheet a tuning is listed under. The analysis
+/// window is not chosen by this — it follows the lowest note (see `windowSize`)
+/// so that a custom tuning gets the same rule as a preset.
 enum InstrumentFamily: String, Codable, CaseIterable, Identifiable {
     case guitar
     case bass
+    case ukulele
+    case mandolin
+    case banjo
+    case orchestral
+    case custom
 
     var id: String { rawValue }
-    var title: String { self == .guitar ? "Guitar" : "Bass" }
+
+    var title: String {
+        switch self {
+        case .guitar: return "Guitar"
+        case .bass: return "Bass"
+        case .ukulele: return "Ukulele"
+        case .mandolin: return "Mandolin"
+        case .banjo: return "Banjo"
+        case .orchestral: return "Violin & Viola"
+        case .custom: return "Custom"
+        }
+    }
 }
 
-struct Tuning: Identifiable, Hashable {
+struct Tuning: Identifiable, Hashable, Codable {
     let id: String
     let name: String
     let family: InstrumentFamily
-    /// MIDI numbers, lowest string first.
+    /// MIDI numbers in the order the strings sit across the neck, starting
+    /// from the one nearest the player's face — the order the chips are drawn
+    /// in. That is lowest pitch first for almost everything, but not for a
+    /// re-entrant tuning: a ukulele's G4 sits above its C4, and a banjo's short
+    /// fifth string is its highest. Nothing may assume this array is sorted.
     let midiNotes: [Int]
+
+    /// The pitch range a string may be set to. B0 (MIDI 23) is the lowest
+    /// note the detector is tested against (§9.7); A5 (MIDI 81, 880 Hz) leaves
+    /// the fundamental clear of the §3 1 kHz lowpass, which is what the
+    /// detector has to see.
+    static let midiRange = 23...81
+    /// At least two, because the scorer judges a string by how far it stands
+    /// out from the *other* strings' neighbourhoods; with one string there is
+    /// nothing to stand out from, and a lone low E never locks. Twelve is room
+    /// for anything with up to twelve distinct courses; past that the chips
+    /// stop being something a thumb can hit. A unison pair belongs in once:
+    /// two strings on the same note are one target, and auto-detection always
+    /// names the first of them.
+    static let stringCountRange = 2...12
 
     var strings: [TuningString] {
         midiNotes.enumerated().map { TuningString(index: $0.offset, midi: $0.element) }
+    }
+
+    /// How heavy a string is drawn, 1 for the lowest-pitched in the set and 0
+    /// for the highest. Ranked by pitch rather than position, so a ukulele's
+    /// high G is drawn thin even though it sits first.
+    func gauge(of index: Int) -> Double {
+        guard midiNotes.indices.contains(index) else { return 0.5 }
+        let distinct = Array(Set(midiNotes)).sorted()
+        guard distinct.count > 1,
+              let rank = distinct.firstIndex(of: midiNotes[index]) else { return 0.5 }
+        return 1 - Double(rank) / Double(distinct.count - 1)
     }
 
     /// §3 window table, expressed as the rule that produces it rather than as a
@@ -96,8 +144,18 @@ struct Tuning: Identifiable, Hashable {
 
     var hopSize: Int { windowSize / 4 }
 
+    /// Across the neck, the way players write a tuning down: DADGAD reads
+    /// "D A D G A D" and a ukulele "G C E A". Reading it high to low instead
+    /// turned DADGAD into "D A G D A D".
     var displaySummary: String {
-        strings.reversed().map(\.noteName).joined(separator: " ")
+        strings.map(\.noteName).joined(separator: " ")
+    }
+
+    var isCustom: Bool { family == .custom }
+
+    /// A copy with a new identity, for "start a custom tuning from this one".
+    func customized(id: String, name: String? = nil) -> Tuning {
+        Tuning(id: id, name: name ?? "My \(self.name)", family: .custom, midiNotes: midiNotes)
     }
 }
 
@@ -134,23 +192,49 @@ enum TuningLibrary {
     static let bassSix = Tuning(id: "bass.six", name: "Bass 6-String",
                                 family: .bass, midiNotes: [23, 28, 33, 38, 43, 48])
 
+    // Ukulele. Soprano, concert and tenor share a tuning; the standard one is
+    // re-entrant, so its first string is G4, not the lowest note.
+    static let ukulele = Tuning(id: "ukulele.standard", name: "Ukulele",
+                                family: .ukulele, midiNotes: [67, 60, 64, 69])
+    static let ukuleleLowG = Tuning(id: "ukulele.lowG", name: "Ukulele Low G",
+                                    family: .ukulele, midiNotes: [55, 60, 64, 69])
+    static let ukuleleD = Tuning(id: "ukulele.d", name: "Ukulele D (A D F♯ B)",
+                                 family: .ukulele, midiNotes: [69, 62, 66, 71])
+    static let baritoneUkulele = Tuning(id: "ukulele.baritone", name: "Baritone Ukulele",
+                                        family: .ukulele, midiNotes: [50, 55, 59, 64])
+
+    // Mandolin, listed by course: each pair is tuned in unison.
+    static let mandolin = Tuning(id: "mandolin.standard", name: "Mandolin",
+                                 family: .mandolin, midiNotes: [55, 62, 69, 76])
+    static let mandola = Tuning(id: "mandolin.mandola", name: "Mandola",
+                                family: .mandolin, midiNotes: [48, 55, 62, 69])
+
+    // Five-string banjo. The short fifth string is the highest note and sits
+    // first across the neck, so these are re-entrant too.
+    static let banjoOpenG = Tuning(id: "banjo.openG", name: "Banjo Open G",
+                                   family: .banjo, midiNotes: [67, 50, 55, 59, 62])
+    static let banjoDoubleC = Tuning(id: "banjo.doubleC", name: "Banjo Double C",
+                                     family: .banjo, midiNotes: [67, 48, 55, 60, 62])
+    static let banjoTenor = Tuning(id: "banjo.tenor", name: "Tenor Banjo",
+                                   family: .banjo, midiNotes: [48, 55, 62, 69])
+
+    static let violin = Tuning(id: "orchestral.violin", name: "Violin",
+                               family: .orchestral, midiNotes: [55, 62, 69, 76])
+    static let viola = Tuning(id: "orchestral.viola", name: "Viola",
+                              family: .orchestral, midiNotes: [48, 55, 62, 69])
+    // No cello. Its C2 and G2 do not lock in `InstrumentTests`: four strings a
+    // fifth apart that low put the scorer's decoys on each other's harmonics,
+    // so the played string never stands out far enough to be acquired.
+
     static let all: [Tuning] = [
         standard, dropD, halfStepDown, fullStepDown, dadgad, openG, openD,
         sevenString, eightString,
         bassFour, bassFive, bassSix,
+        ukulele, ukuleleLowG, ukuleleD, baritoneUkulele,
+        mandolin, mandola,
+        banjoOpenG, banjoDoubleC, banjoTenor,
+        violin, viola,
     ]
 
     static func tuning(id: String) -> Tuning? { all.first { $0.id == id } }
-
-    static func grouped() -> [TuningGroup] {
-        InstrumentFamily.allCases.map { family in
-            TuningGroup(family: family, tunings: all.filter { $0.family == family })
-        }
-    }
-}
-
-struct TuningGroup: Identifiable {
-    let family: InstrumentFamily
-    let tunings: [Tuning]
-    var id: String { family.rawValue }
 }

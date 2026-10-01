@@ -12,6 +12,7 @@ final class TunerUITests: XCTestCase {
     override func setUp() {
         continueAfterFailure = false
         app = XCUIApplication()
+        app.launchArguments = ["-zf-reset-tunings"]
         app.launch()
     }
 
@@ -109,6 +110,101 @@ final class TunerUITests: XCTestCase {
         preset440.tap()
         app.buttons["Done"].tap()
         XCTAssertTrue(app.staticTexts["A440"].waitForExistence(timeout: 5))
+    }
+
+    func testFavoritesNarrowTheSheetToWhatThePlayerUses() {
+        app.buttons["tuningButton"].tap()
+        XCTAssertTrue(app.buttons["tuning.guitar.standard"].waitForExistence(timeout: 5))
+
+        // Star a ukulele tuning, which is well below the fold.
+        let star = app.buttons["favorite.ukulele.standard"]
+        scrollTo(star)
+        star.tap()
+        XCTAssertEqual(star.label, "Remove Ukulele from favorites")
+
+        app.segmentedControls["tuningFilter"].buttons["Favorites"].tap()
+        let uke = app.buttons["tuning.ukulele.standard"]
+        XCTAssertTrue(uke.waitForExistence(timeout: 3), "starred tuning missing from Favorites")
+        XCTAssertFalse(app.buttons["tuning.guitar.standard"].exists,
+                       "Favorites should hide what is not starred")
+        attach("favorites")
+
+        uke.tap()
+        XCTAssertTrue(app.buttons["tuningButton"].waitForExistence(timeout: 5))
+        XCTAssertTrue(app.buttons["tuningButton"].label.contains("Ukulele"))
+        // Four strings, with the re-entrant G first.
+        XCTAssertTrue(app.buttons["string.3"].exists)
+        XCTAssertFalse(app.buttons["string.4"].exists)
+
+        // The filter is remembered: the next open goes straight to Favorites.
+        app.buttons["tuningButton"].tap()
+        XCTAssertTrue(app.buttons["tuning.ukulele.standard"].waitForExistence(timeout: 5))
+        XCTAssertFalse(app.buttons["tuning.guitar.standard"].exists)
+
+        // Unstarring the last one leaves the empty state, not a blank sheet.
+        app.buttons["favorite.ukulele.standard"].tap()
+        XCTAssertTrue(app.descendants(matching: .any)["favoritesEmpty"].waitForExistence(timeout: 3))
+
+        app.segmentedControls["tuningFilter"].buttons["All"].tap()
+        let standard = app.buttons["tuning.guitar.standard"]
+        XCTAssertTrue(standard.waitForExistence(timeout: 3))
+        standard.tap()
+    }
+
+    func testCustomTuningIsMadeUsedAndDeleted() {
+        app.buttons["tuningButton"].tap()
+        let add = app.buttons["newCustomTuning"]
+        XCTAssertTrue(add.waitForExistence(timeout: 5))
+        add.tap()
+
+        let name = app.textFields["customName"]
+        XCTAssertTrue(name.waitForExistence(timeout: 5))
+        name.tap()
+        name.typeText(String(repeating: XCUIKeyboardKey.delete.rawValue, count: 24) + "Drop C")
+
+        // Starts as a copy of Standard. Take every string down a whole step,
+        // and the lowest one a further whole step: C G C F A D.
+        for index in 0..<6 {
+            let down = app.buttons["customString.\(index)-Decrement"]
+            scrollTo(down)
+            let steps = index == 0 ? 4 : 2
+            for _ in 0..<steps { down.tap() }
+        }
+        XCTAssertEqual(app.buttons["customString.0-Decrement"].value as? String, "C2")
+        attach("custom-editor")
+
+        app.buttons["customSave"].tap()
+
+        // Saving tunes to it and closes both sheets.
+        let rail = app.buttons["tuningButton"]
+        XCTAssertTrue(rail.waitForExistence(timeout: 5))
+        XCTAssertTrue(rail.label.contains("Drop C"), "rail shows \(rail.label)")
+        XCTAssertTrue(app.buttons["newCustomTuning"].waitForNonExistence(timeout: 3),
+                      "the tuning sheet should close with the editor")
+        XCTAssertTrue(app.buttons["string.5"].exists)
+
+        // Delete it from the list; the tuner falls back to Standard.
+        rail.tap()
+        let row = app.buttons.matching(NSPredicate(format: "identifier BEGINSWITH 'tuning.custom.'"))
+            .firstMatch
+        scrollTo(row)
+        XCTAssertTrue(row.label.contains("Drop C"))
+        row.swipeLeft()
+        app.buttons["Delete"].tap()
+        XCTAssertTrue(row.waitForNonExistence(timeout: 3), "custom tuning was not deleted")
+
+        app.buttons["Done"].tap()
+        XCTAssertTrue(rail.waitForExistence(timeout: 5))
+        XCTAssertTrue(rail.label.contains("Standard"), "rail shows \(rail.label)")
+    }
+
+    private func scrollTo(_ element: XCUIElement, file: StaticString = #filePath, line: UInt = #line) {
+        var swipes = 0
+        while !(element.exists && element.isHittable), swipes < 12 {
+            app.swipeUp()
+            swipes += 1
+        }
+        XCTAssertTrue(element.isHittable, "\(element) never came into view", file: file, line: line)
     }
 
     func testLandscapeKeepsTheWholeStageOnScreen() {

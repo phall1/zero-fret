@@ -1,6 +1,6 @@
 # Zero Fret
 
-A guitar and bass tuner for iOS that shows you a string, not a needle.
+A guitar, bass and ukulele tuner for iOS that shows you a string, not a needle.
 
 The reading is a standing wave whose wobble beats at `|f_measured − f_target|`
 and whose amplitude tracks how far out you are. When the note lands inside the
@@ -235,8 +235,9 @@ ZeroFret/
   App/        entry point, Info.plist
   Audio/      session, ring buffer, biquad, MPM detector, smoothing,
               noise gate, harmonic target scoring, pitch-stability gate
-  Model/      tuning maths, string assignment, snapshot buffer, coordinator
-  View/       stage, string canvas, tuning sheet, settings
+  Model/      tuning maths, presets + custom tunings + favorites, string
+              assignment, snapshot buffer, coordinator
+  View/       stage, string canvas, tuning sheet + editor, settings
   Haptics/    the latch that stops the tick machine-gunning
   Support/    C atomics shim + bridging header
 ```
@@ -244,7 +245,22 @@ ZeroFret/
 ## Tunings
 
 Guitar Standard, Drop D, E♭, D Standard, DADGAD, Open G, Open D, 7-string,
-8-string. Bass 4-, 5- and 6-string.
+8-string. Bass 4-, 5- and 6-string. Ukulele standard (re-entrant G), low G, D
+and baritone. Mandolin and mandola, banjo open G, double C and tenor, violin and
+viola. No cello: a low four-string tuning in fifths does not lock in
+`InstrumentTests`, and a preset that does not lock is worse than none.
+
+**Your own.** The **+** in the tuning sheet makes a custom tuning, starting from
+whatever is selected, one semitone step per tap; swipe or long-press a custom
+row to edit or delete it. Any tuning can be starred, and the sheet's
+**Favorites** filter, which is remembered, cuts the list down to those. A custom
+tuning is two to twelve strings between B0 and A5 — the range the detector is
+tested across, and two because a string is recognised by how far it stands out
+from the others.
+
+Strings are stored in the order they sit across the neck, which is not pitch
+order on a re-entrant tuning — a ukulele's G4 comes before its C4. Nothing
+assumes the notes are sorted; the drawn gauge ranks by pitch.
 
 Targets are stored as MIDI note numbers and Hz is always derived
 (`f(n) = referenceA · 2^((n−69)/12)`), so the reference-pitch setting moves the
