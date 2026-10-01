@@ -226,7 +226,6 @@ UI footage of a signal no one played. Proposed shot list when there is time:
    - `Scripts/archive.sh --upload` (build 10)
    - `Scripts/metadata.py push --create-version 1.1`
    - upload the screenshot sets and delete the old 6.5" set
-   - push `v1.0`
    - tag `v1.1` on the archived commit
 
 ## Follow-ups (not in this release)
